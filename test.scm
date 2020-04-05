@@ -8,6 +8,17 @@
 (use jwt)
 (test-module 'jwt)
 
+(test* "construct header"
+       (construct-jwt-header :another "foo")
+       `(("typ" . "JWT")
+         ("alg" . "HS256")
+         ("another" . "foo")))
+
+(test* "construct payload"
+       (construct-jwt-payload :iat 10 :another "foo")
+       `(("iat" . 10)
+         ("another" . "foo")))
+
 (let* ([secret "HOGE"]
        [header1 (construct-jwt-header :alg "HS256")]
        [payload1 (construct-jwt-payload)]

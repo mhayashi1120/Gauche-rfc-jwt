@@ -64,17 +64,32 @@
     [else
      (errorf "Not yet supported algorithm ~a" algorithm)]))
 
+(define (other-keys keys)
+  (let loop ([params keys]
+             [res '()])
+    (match params
+      [()
+       (reverse! res)]
+      [((? keyword? k) v . rest)
+       (loop rest
+             (cons
+              (cons (keyword->string k) v)
+              res))])))
+
+
 (define (construct-jwt-header
-         :key (typ "JWT") (cty #f) (alg "HS256"))
+         :key (typ "JWT") (cty #f) (alg "HS256")
+         :allow-other-keys _other-keys)
   (cond-list
    [typ (cons "typ" typ)]
    [cty (cons "cty" cty)]
-   [alg (cons "alg" alg)])
-   )
+   [alg (cons "alg" alg)]
+   [#t @ (other-keys _other-keys)]))
 
 (define (construct-jwt-payload
          :key (iss #f) (sub #f) (aud #f)
-         (exp #f) (nbf #f) (iat (sys-time)) (jti #f))
+         (exp #f) (nbf #f) (iat (sys-time)) (jti #f)
+         :allow-other-keys _other-keys)
   (cond-list
    [iss (cons "iss" iss)]
    [sub (cons "sub" sub)]
@@ -83,7 +98,7 @@
    [nbf (cons "nbf" nbf)]
    [iat (cons "iat" iat)]
    [jti (cons "jti" jti)]
-   ))
+   [#t @ (other-keys _other-keys)]))
  
 (autoload srfi-13 string-pad-right)
 
