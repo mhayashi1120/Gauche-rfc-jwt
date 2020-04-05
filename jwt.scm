@@ -93,8 +93,8 @@
       b64
       (string-pad-right b64 (* (+ d 1) 4) #\=))))
 
-;; ALGORITHM: "HS256" / "none"
 (define (jwt-encode header payload secret)
+  ;; ALGORITHM: "HS256" / "HS384" / "HS512" / "none" (TODO)
   (let* ([algorithm (assoc-ref header "alg")]
          [header/b64 (encode-header header)]
          [payload/b64 (encode-payload payload)]
