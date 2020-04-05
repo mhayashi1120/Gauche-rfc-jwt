@@ -1,0 +1,17 @@
+;;;
+;;; jwtlib.stub
+;;;
+
+(declcode
+ (.include "jwt.h"))
+
+;; The following entry is a dummy one.
+;; Replace it for your definitions.
+
+(define-cproc test-jwt () ::<const-cstring>
+  (result "jwt is working"))
+
+
+;; Local variables:
+;; mode: scheme
+;; end:
