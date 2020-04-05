@@ -8,10 +8,14 @@
 (use jwt)
 (test-module 'jwt)
 
-;; The following is a dummy test code.
-;; Replace it for your tests.
-(test* "test-jwt" "jwt is working"
-       (test-jwt))
+(let* ([secret "HOGE"]
+       [header1 (construct-jwt-header :alg "HS256")]
+       [payload1 (construct-jwt-payload)]
+       [token (jwt-encode header1 payload1 secret)])
+  (receive (header payload) (jwt-decode token secret :verify? #t)
+    (test* "header1" header1 header)
+    (test* "payload1" payload1 payload)
+    ))
 
 ;; If you don't want `gosh' to exit with nonzero status even if
 ;; the test fails, pass #f to :exit-on-failure.
