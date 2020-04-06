@@ -118,19 +118,21 @@
          [sign/b64 (encode-base64 sign)])
     #"~|sign-target|.~|sign/b64|"))
 
-(define (jwt-decode token secret :key (verify? #f))
+(define (jwt-decode token secret :key (verify? #f) (verify-signature? #t) (now (sys-time)))
   (match (string-split token ".")
     [(header/b64 payload/b64 sign/b64)
      (receive (algorithm header) (decode-header header/b64)
-       (let* ([payload (decode-payload payload/b64)]
-              [sign-target #"~|header/b64|.~|payload/b64|"]
-              [verifier (signature algorithm sign-target secret)]
-              )
-         (when verify?
-           (let1 verifier/b64 (encode-base64 verifier)
-             (unless (string=? (ensure-base64-suffix sign/b64) verifier/b64)
-               (errorf "Not a valid signature expected ~a but ~a"
-                      verifier/b64 sign/b64))))
+       (let* ([payload (decode-payload payload/b64)])
+         (when (or verify-signature? verify?)
+           (when verify-signature?
+             (let* ([sign-target #"~|header/b64|.~|payload/b64|"]
+                    [verifier (signature algorithm sign-target secret)]
+                    [verifier/b64 (encode-base64 verifier)])
+               (unless (string=? (ensure-base64-suffix sign/b64) verifier/b64)
+                 (errorf "Not a valid signature expected ~a but ~a"
+                         verifier/b64 sign/b64))))
+           ;; TODO currently just verify signature.
+           )
          (values header payload)))]
     [else
      (error "Invalid Json Web Token ~a"

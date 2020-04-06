@@ -4,12 +4,12 @@
 
 (define-gauche-package "Gauche-jwt"
   ;; 
-  :version "1.0"
+  :version "0.0.1"
 
   ;; Description of the package.  The first line is used as a short
   ;; summary.
-  :description "Sample package.scm\n\
-                Write your package description here."
+  :description "Json Web Token (JWT) \n\
+                ."
 
   ;; List of dependencies.
   ;; Example:
@@ -35,7 +35,7 @@
 
   ;; List licenses
   ;; e.g. ("BSD")
-  :licenses ()
+  :licenses ("BSD")
 
   ;; Homepage URL, if any.
   ; :homepage "http://example.com/Gauche-jwt/"
