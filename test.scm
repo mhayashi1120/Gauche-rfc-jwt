@@ -23,7 +23,16 @@
        [header1 (construct-jwt-header :alg "HS256")]
        [payload1 (construct-jwt-payload)]
        [token (jwt-encode header1 payload1 secret)])
-  (receive (header payload) (jwt-decode token secret :verify? #t)
+  (receive (header payload) (jwt-decode token secret)
+    (test* "header1" header1 header)
+    (test* "payload1" payload1 payload)
+    ))
+
+(let* ([secret #f]
+       [header1 (construct-jwt-header :alg "none")]
+       [payload1 (construct-jwt-payload)]
+       [token (jwt-encode header1 payload1 secret)])
+  (receive (header payload) (jwt-decode token secret)
     (test* "header1" header1 header)
     (test* "payload1" payload1 payload)
     ))

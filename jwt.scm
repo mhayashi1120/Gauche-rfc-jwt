@@ -20,10 +20,11 @@
 ;; (dynamic-load "jwt")
 
 (autoload rfc.hmac hmac-digest)
+(autoload srfi-13 string-pad-right)
 
-;;
-;; Put your Scheme definitions here
-;;
+;;;
+;;; Basic
+;;;
 
 (define (encode-base64 s)
   (base64-encode-string s :line-width #f :url-safe #t))
@@ -34,19 +35,29 @@
 (define (hmac-sha s key hasher)
   (hmac-digest-string s :key key :hasher hasher))
 
+(define (rsa-sha s key hasher)
+  ;; TODO
+  )
+
+;;;
+;;; Decoder / Encoder
+;;;
+
 (define (encode-header header)
-  (encode-base64
-   (construct-json-string header)))
+  ($ encode-base64 $ construct-json-string header))
 
 (define (decode-header header/b64)
-  (let1 json (parse-json-string (decode-base64 header/b64))
-    (values (assoc-ref json "alg") json)))
+  ($ parse-json-string $ decode-base64 header/b64))
 
 (define (encode-payload payload)
-  (encode-base64 (construct-json-string payload)))
+  ($ encode-base64 $ construct-json-string payload))
 
 (define (decode-payload payload/b64)
-  (parse-json-string (decode-base64 payload/b64)))
+  ($ parse-json-string $ decode-base64 payload/b64))
+
+;;;
+;;; Sign
+;;;
 
 (define (hmac-hasher algorithm)
   (match algorithm
@@ -55,14 +66,30 @@
     ["HS512" <sha512>]
     [else #f]))
 
-(define (signature algorithm target secret)
+(define (rsa-hasher algorithm)
+  (match algorithm
+    ["RS256" <sha256>]
+    ["RS384" <sha384>]
+    ["RS512" <sha512>]
+    [else #f]))
+
+(define (signature algorithm target key)
   (match algorithm
     ;; FIXME redundant pattern?
     [(and (? hmac-hasher)
           (= hmac-hasher hasher))
-     (hmac-sha target secret hasher)]
+     (hmac-sha target key hasher)]
+    [(and (? rsa-hasher)
+          (= rsa-hasher hasher))
+     (rsa-sha target key hasher)]
+    ["none"
+     ""]
     [else
      (errorf "Not yet supported algorithm ~a" algorithm)]))
+
+;;;
+;;; Construct json
+;;;
 
 (define (other-keys keys)
   (let loop ([params keys]
@@ -75,7 +102,6 @@
              (cons
               (cons (keyword->string k) v)
               res))])))
-
 
 (define (construct-jwt-header
          :key (typ "JWT") (cty #f) (alg "HS256")
@@ -100,41 +126,48 @@
    [jti (cons "jti" jti)]
    [#t @ (other-keys _other-keys)]))
  
-(autoload srfi-13 string-pad-right)
-
-(define (ensure-base64-suffix b64)
-  (receive (d m) (div-and-mod (string-length b64) 4)
-    (if (= m 0)
-      b64
-      (string-pad-right b64 (* (+ d 1) 4) #\=))))
-
-(define (jwt-encode header payload secret)
-  ;; ALGORITHM: "HS256" / "HS384" / "HS512" / "none" (TODO)
+(define (jwt-encode header payload key)
+  ;; ALGORITHM: "HS256" / "HS384" / "HS512" / "none"
   (let* ([algorithm (assoc-ref header "alg")]
          [header/b64 (encode-header header)]
          [payload/b64 (encode-payload payload)]
          [sign-target #"~|header/b64|.~|payload/b64|"]
-         [sign (signature algorithm sign-target secret)]
+         [sign (signature algorithm sign-target key)]
          [sign/b64 (encode-base64 sign)])
     #"~|sign-target|.~|sign/b64|"))
 
-(define (jwt-decode token secret :key (verify? #f) (verify-signature? #t) (now (sys-time)))
+(define (jwt-decode token key :key (verify-signature? #t))
   (match (string-split token ".")
     [(header/b64 payload/b64 sign/b64)
-     (receive (algorithm header) (decode-header header/b64)
-       (let* ([payload (decode-payload payload/b64)])
-         (when (or verify-signature? verify?)
-           (when verify-signature?
-             (let* ([sign-target #"~|header/b64|.~|payload/b64|"]
-                    [verifier (signature algorithm sign-target secret)]
-                    [verifier/b64 (encode-base64 verifier)])
-               (unless (string=? (ensure-base64-suffix sign/b64) verifier/b64)
-                 (errorf "Not a valid signature expected ~a but ~a"
-                         verifier/b64 sign/b64))))
-           ;; TODO currently just verify signature.
-           )
-         (values header payload)))]
+     ;;TODO algorithm is not supplied
+     (let* ([header (decode-header header/b64)]
+            [algorithm (assoc-ref header "alg")]
+            [payload (decode-payload payload/b64)])
+       (when verify-signature?
+         (let* ([verify-target #"~|header/b64|.~|payload/b64|"]
+                [sign (decode-base64 sign/b64)]
+                [verifier (signature algorithm verify-target key)]
+                [verifier/b64 (encode-base64 verifier)])
+           (unless (string=? sign verifier)
+             (errorf "Not a valid signature expected ~a but ~a"
+                     verifier/b64 sign/b64))))
+       ;; TODO Check type (some of field has number or not)
+       (values header payload))]
     [else
-     (error "Invalid Json Web Token ~a"
-            token)]))
+     (errorf "Invalid Json Web Token ~a"
+             token)]))
 
+;; TODO Implements just MUST 
+(define (jwt-verify
+         header payload
+         :key
+         (iss #f)
+         (aud #f)
+         (now (sys-time)))
+  ;; TODO currently just verify signature.
+  ;; - Check expire, via NOW
+  (if-let1 exp (assoc-ref header "exp")
+    (when (< exp now)
+      (errorf "Already expired at ~a" exp)))
+
+  )
