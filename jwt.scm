@@ -90,10 +90,9 @@
 ;;; Verifier
 ;;;
 
-(define (decode-hmac algorithm key header/b64 payload/b64 sign/b64)
+(define (decode-hmac algorithm key header/b64 payload/b64 sign)
   (let* ([verify-target #"~|header/b64|.~|payload/b64|"]
-         [verifier (signature algorithm verify-target key)]
-         [sign (base64-urldecode sign/b64)])
+         [verifier (signature algorithm verify-target key)])
     (values sign verifier)))
 
 ;;;
@@ -172,7 +171,7 @@
          (receive (signature verifier)
              (match algorithm
                [(or "HS256" "HS384" "HS512")
-                (decode-hmac algorithm key header/b64 payload/b64 sign/b64)]
+                (decode-hmac algorithm key header/b64 payload/b64 sign)]
                [(or "RS256" "RS384" "RS512")
                 (decode-rsa algorithm key header/b64 payload/b64 sign)]
                ["none"

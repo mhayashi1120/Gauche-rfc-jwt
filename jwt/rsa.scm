@@ -11,7 +11,7 @@
 (select-module jwt.rsa)
 
 ;;;
-;;; RSA (should be split other module)
+;;; RSA module for JWT
 ;;;
 
 (define (u8vector->bignum v :optional (be? #f))
