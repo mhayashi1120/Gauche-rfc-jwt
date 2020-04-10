@@ -79,6 +79,7 @@
      (hmac-sha target key hasher)]
     ["none"
      ""]
+    ;; These algorithm just `recommended`
     [(and (? rsa-hasher)
           (= rsa-hasher hasher))
      (rsa-sha target key hasher)]
@@ -134,6 +135,11 @@
    [jti (cons "jti" jti)]
    [#t @ (other-keys _other-keys)]))
  
+;;;
+;;; Encode / Decode (verify)
+;;;
+
+
 ;; HEADER: json-object / STRING
 ;; PAYLOAD: json-object / STRING
 ;; KEY: Hold key depend on algorithm
