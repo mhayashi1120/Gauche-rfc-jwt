@@ -3,6 +3,7 @@
 ;;;
 
 (define-module jwt
+  (use srfi-13)
   (use util.match)
   (use rfc.sha1)
   (use rfc.json)
@@ -26,10 +27,10 @@
 ;;; Basic
 ;;;
 
-(define (encode-base64 s)
-  (base64-encode-string s :line-width #f :url-safe #t))
+(define (base64-urlencode s)
+  (string-trim-right (base64-encode-string s :line-width #f :url-safe #t) #[=]))
 
-(define (decode-base64 s)
+(define (base64-urldecode s)
   (base64-decode-string s :url-safe #t))
 
 (define (hmac-sha s key hasher)
@@ -37,23 +38,29 @@
 
 (define (rsa-sha s key hasher)
   ;; TODO
-  )
+  (digest-string hasher s))
 
 ;;;
 ;;; Decoder / Encoder
 ;;;
 
 (define (encode-header header)
-  ($ encode-base64 $ construct-json-string header))
+  ($ base64-urlencode $ construct-json-string header))
 
 (define (decode-header header/b64)
-  ($ parse-json-string $ decode-base64 header/b64))
+  ($ parse-json-string $ base64-urldecode header/b64))
 
 (define (encode-payload payload)
-  ($ encode-base64 $ construct-json-string payload))
+  ($ base64-urlencode $ construct-json-string payload))
 
 (define (decode-payload payload/b64)
-  ($ parse-json-string $ decode-base64 payload/b64))
+  ($ parse-json-string $ base64-urldecode payload/b64))
+
+;;;
+;;; RSA (should be split other module)
+;;;
+
+
 
 ;;;
 ;;; Sign
@@ -133,7 +140,7 @@
          [payload/b64 (encode-payload payload)]
          [sign-target #"~|header/b64|.~|payload/b64|"]
          [sign (signature algorithm sign-target key)]
-         [sign/b64 (encode-base64 sign)])
+         [sign/b64 (base64-urlencode sign)])
     #"~|sign-target|.~|sign/b64|"))
 
 (define (jwt-decode token key :key (verify-signature? #t))
@@ -145,9 +152,9 @@
             [payload (decode-payload payload/b64)])
        (when verify-signature?
          (let* ([verify-target #"~|header/b64|.~|payload/b64|"]
-                [sign (decode-base64 sign/b64)]
+                [sign (base64-urldecode sign/b64)]
                 [verifier (signature algorithm verify-target key)]
-                [verifier/b64 (encode-base64 verifier)])
+                [verifier/b64 (base64-urlencode verifier)])
            (unless (string=? sign verifier)
              (errorf "Not a valid signature expected ~a but ~a"
                      verifier/b64 sign/b64))))
