@@ -39,6 +39,9 @@
     (test* "payload1" payload1 payload)
     ))
 
+(use jwt.rsa)
+(test-module 'jwt.rsa)
+
 (define (read-jwk-private json-node)
   (make <rsa-private>
     :N (bignum-ref json-node "n")
@@ -53,7 +56,7 @@
   (with-input-from-file file parse-json))
 
 (define (bignum-ref key item)
-  ((with-module jwt b64->bignum) (assoc-ref key item)))
+  ((with-module jwt.rsa b64->bignum) (assoc-ref key item)))
 
 (let* ([jwk-key (read-json "tests/rfc7515-a-2-private-key.json")]
        [header (read-json "tests/rfc7515-a-2-header.json")]
@@ -61,7 +64,7 @@
        [payload (file->string "tests/rfc7515-a-2-payload.json")]
        [privKey (read-jwk-private jwk-key)]
        [token (jwt-encode header payload privKey)])
-  (test* "Described RFC"
+  (test* "Described in RFC"
          (file->string "tests/rfc7515-a-2-result.txt") token))
 
 ;; If you don't want `gosh' to exit with nonzero status even if
