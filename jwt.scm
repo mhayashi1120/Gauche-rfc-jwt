@@ -24,7 +24,6 @@
 ;; (dynamic-load "jwt")
 
 (autoload rfc.hmac hmac-digest)
-(autoload srfi-13 string-pad-right)
 
 ;;;
 ;;; Basic
@@ -251,6 +250,9 @@
    [jti (cons "jti" jti)]
    [#t @ (other-keys _other-keys)]))
  
+;; HEADER: json-object / STRING
+;; PAYLOAD: json-object / STRING
+;; KEY: Hold key depend on algorithm
 (define (jwt-encode header payload key)
   (define (as-json x)
     (cond
