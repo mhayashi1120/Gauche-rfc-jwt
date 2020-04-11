@@ -18,6 +18,8 @@ SCM_DECL_BEGIN
 
 extern ScmObj test_jwtec(void);
 
+extern ScmObj test_ecdsa(void);
+
 /* Epilogue */
 SCM_DECL_END
 

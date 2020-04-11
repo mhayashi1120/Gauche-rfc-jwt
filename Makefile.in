@@ -21,6 +21,7 @@ SOEXT  = @SOEXT@
 OBJEXT = @OBJEXT@
 EXEEXT = @EXEEXT@
 LOCAL_PATHS = "@LOCAL_PATHS@"
+LIBS   =  -lssl
 
 # Module-specific stuff
 PACKAGE   = Gauche-jwt
@@ -44,7 +45,9 @@ all : $(TARGET)
 
 # TODO remove --keep-c-files after debug
 jwtec.$(SOEXT): $(jwt_SRCS)
-	$(GAUCHE_PACKAGE) compile --keep-c-files \
+	$(GAUCHE_PACKAGE) compile \
+	  --keep-c-files \
+	  --libs=$(LIBS) \
 	  --local=$(LOCAL_PATHS) --verbose jwtec $(jwt_SRCS)
 
 check : all
@@ -64,7 +67,7 @@ uninstall :
 	$(INSTALL) -U $(GAUCHE_PKGLIBDIR)/.packages $(PACKAGE).gpd
 
 clean :
-	$(GAUCHE_PACKAGE) compile --clean jwt $(jwt_SRCS)
+	$(GAUCHE_PACKAGE) compile --clean jwtec $(jwt_SRCS)
 	rm -rf core $(TARGET) $(GENERATED) *~ test.log so_locations
 
 distclean : clean

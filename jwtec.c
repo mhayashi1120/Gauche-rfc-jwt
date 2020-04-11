@@ -2,6 +2,8 @@
  * jwtec.c
  */
 
+#include <openssl/ecdsa.h>
+
 #include "jwtec.h"
 
 /*
@@ -13,6 +15,16 @@ ScmObj test_jwtec(void)
 {
     return SCM_MAKE_STR("jwtec is working");
 }
+
+ScmObj test_ecdsa(void)
+{
+    ECDSA_SIG *sig = ECDSA_SIG_new();
+
+    ECDSA_SIG_free(sig);
+
+    return SCM_MAKE_STR("HOGE");
+}
+    
 
 /*
  * Module initialization function.
@@ -27,7 +39,7 @@ void Scm_Init_jwtec(void)
     SCM_INIT_EXTENSION(jwtec);
 
     /* Create the module if it doesn't exist yet. */
-    mod = SCM_MODULE(SCM_FIND_MODULE("jwtec", TRUE));
+    mod = SCM_MODULE(SCM_FIND_MODULE("jwt.ecdsa", TRUE));
 
     /* Register stub-generated procedures */
     Scm_Init_jwteclib(mod);

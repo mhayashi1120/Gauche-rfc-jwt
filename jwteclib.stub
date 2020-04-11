@@ -3,13 +3,21 @@
 ;;;
 
 (declcode
- (.include "jwtec.h"))
+ (.include <openssl/ecdsa.h>)
+ (.include "jwtec.h")
+ )
 
 ;; The following entry is a dummy one.
 ;; Replace it for your definitions.
 
+(define-cproc test-jwteclib () ::<const-cstring>
+  (result "jwteclib stub is working"))
+
 (define-cproc test-jwtec () ::<const-cstring>
-  (result "jwtec is working"))
+  "SCM_RETURN(test_jwtec());")
+
+(define-cproc test-ecdsa () ::<const-cstring>
+  "SCM_RETURN(test_ecdsa());")
 
 
 ;; Local variables:
