@@ -1,7 +1,7 @@
 
 (use gauche.test)
 
-(test-start "jwtec")
+(test-start "jwt.ecdsa")
 (use jwt.ecdsa)
 (test-module 'jwt.ecdsa)
 

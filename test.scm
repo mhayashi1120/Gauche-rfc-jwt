@@ -39,6 +39,7 @@
     (test* "payload1" payload1 payload)
     ))
 
+(test-start "jwt.rsa")
 (use jwt.rsa)
 (test-module 'jwt.rsa)
 
