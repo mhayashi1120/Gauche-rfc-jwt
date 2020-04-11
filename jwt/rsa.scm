@@ -14,6 +14,10 @@
 ;;; RSA module for JWT
 ;;;
 
+;;;
+;;; OctetString <-> Gauche integer
+;;;
+
 (define (u8vector->bignum v :optional (be? #f))
   (let1 lis (u8vector->list v)
     (when be?
@@ -46,6 +50,10 @@
   (let1 b (base64-decode-string s :url-safe #t)
     (string->bignum b)))
 
+;;;
+;;; Key
+;;;
+
 (define-class <rsa-public> ()
   (
    (N :init-keyword :N)
@@ -61,13 +69,9 @@
 (define (compute-keysize N)
   (ceiling->exact (log (+ N 1) 256)))
 
-(define (rsa-sign M key)
-  (let1 C (expt-mod M (rsa-exponent key) (~ key'N))
-    C))
-
-(define (rsa-verify C key hasher)
-  (let1 M1 (expt-mod C (rsa-exponent key) (~ key'N))
-    M1))
+;;;
+;;; PKCS (Part of RFC 3447)
+;;;
 
 ;; RFC 3447 9.2 EMSA-PKCS1-v1_5-ENCODE
 (define (pkcs1-encode hasher m emLen)
@@ -106,6 +110,21 @@
    [else
     (error "Not a supported hasher" hasher)]))
 
+;;;
+;;; RSA
+;;;
+
+(define (rsa-sign M key)
+  (let1 C (expt-mod M (rsa-exponent key) (~ key'N))
+    C))
+
+(define (rsa-verify C key hasher)
+  (let1 M1 (expt-mod C (rsa-exponent key) (~ key'N))
+    M1))
+
+;;;
+;;; Encode / Decode
+;;;
 
 (define (decode-rsa algorithm key header/b64 payload/b64 sign)
   (let* ([hasher (rsa-hasher algorithm)]
@@ -115,7 +134,7 @@
          [M1 (rsa-verify C key hasher)])
     (values M0 M1)))
 
-
+;; TODO rename -> encode-rsa
 (define (rsa-sha s key hasher)
   (let* ([M (pkcs1-encode hasher s (compute-keysize (~ key'N)))]
          [C (rsa-sign M key)]
