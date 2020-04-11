@@ -1,15 +1,15 @@
 ;;;
-;;; jwtlib.stub
+;;; jwteclib.stub
 ;;;
 
 (declcode
- (.include "jwt.h"))
+ (.include "jwtec.h"))
 
 ;; The following entry is a dummy one.
 ;; Replace it for your definitions.
 
-(define-cproc test-jwt () ::<const-cstring>
-  (result "jwt is working"))
+(define-cproc test-jwtec () ::<const-cstring>
+  (result "jwtec is working"))
 
 
 ;; Local variables:

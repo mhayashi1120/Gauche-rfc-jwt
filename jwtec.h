@@ -1,10 +1,10 @@
 /*
- * jwt.h
+ * jwtec.h
  */
 
 /* Prologue */
-#ifndef GAUCHE_JWT_H
-#define GAUCHE_JWT_H
+#ifndef GAUCHE_JWTEC_H
+#define GAUCHE_JWTEC_H
 
 #include <gauche.h>
 #include <gauche/extend.h>
@@ -16,9 +16,9 @@ SCM_DECL_BEGIN
  * Replace it for your declarations.
  */
 
-extern ScmObj test_jwt(void);
+extern ScmObj test_jwtec(void);
 
 /* Epilogue */
 SCM_DECL_END
 
-#endif  /* GAUCHE_JWT_H */
+#endif  /* GAUCHE_JWTEC_H */

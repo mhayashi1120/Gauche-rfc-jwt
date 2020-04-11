@@ -18,9 +18,6 @@
   )
 (select-module jwt)
 
-;; Loads extension (TODO Other algorithm)
-;; (dynamic-load "jwt")
-
 (autoload rfc.hmac hmac-digest)
 
 ;; RSA algorithm is just `recommended`
