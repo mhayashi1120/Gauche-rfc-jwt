@@ -24,7 +24,7 @@ https://github.com/jwt/ruby-jwt
 
 ## TODO
 
-ECDSA
+ECDSA (ES256, ES384, ES512) Recommended+
 libssl-dev
 /usr/include/openssl/ecdsa.h
 
