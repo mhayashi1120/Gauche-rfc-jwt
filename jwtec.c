@@ -111,28 +111,119 @@ ScmObj test_ecdsa(void)
     return SCM_MAKE_STR("HOGEあいうえお");
 }
     
-
-ScmObj signWithKey(BIGNUM *prv, const unsigned char *dgst, int dgstlen)
+BIGNUM * ScmUVectorToBignum(const ScmUVector * v)
 {
+    /* TODO */
+    BIGNUM * bn = BN_new();
+    const unsigned char *body = (unsigned char*)SCM_UVECTOR_ELEMENTS(v);
+    const int len = SCM_UVECTOR_SIZE(v);
+
+    BN_bin2bn(body, len, bn);
+
+    return bn;
+}
+
+ScmObj verifyByKey(const char *curveType, const ScmUVector *DGST,
+		   const ScmUVector *R, const ScmUVector *S,
+		   const ScmUVector *X, const ScmUVector *Y)
+{
+    BIGNUM *x = ScmUVectorToBignum(X);
+    BIGNUM *y = ScmUVectorToBignum(Y);
+    const int nid = EC_curve_nist2nid(curveType);
+    EC_KEY * pubKey = EC_KEY_new_by_curve_name(nid);
+    char * errorMsg = NULL;
+
+    /* x, y seems non changed const values */
+    if (! EC_KEY_set_public_key_affine_coordinates(pubKey, (BIGNUM*)x, (BIGNUM*)y)) {
+	errorMsg = "Failed to set public key";
+	goto exit;
+    }
+
+    ECDSA_SIG * signature = ECDSA_SIG_new();
+    BIGNUM *r = ScmUVectorToBignum(R);
+    BIGNUM *s = ScmUVectorToBignum(S);
+
+    /* TODO check result */
+    ECDSA_SIG_set0(signature, r, s);
+
+    const int sigSize = ECDSA_size(pubKey);
+    const char *dgst = (char*)SCM_UVECTOR_ELEMENTS(DGST);
+    const int dgstlen = SCM_UVECTOR_SIZE(DGST);
+    const int verifyResult = ECDSA_do_verify(dgst, dgstlen, signature, pubKey);
+    
+    ScmObj result = NULL;
+
+    if (! verifyResult) {
+	result = SCM_FALSE;
+	goto exit;
+    }
+    
+    result = SCM_TRUE;
+
+exit:
+    /* TODO when not initialized, what value is ? */
+    if (pubKey != NULL) EC_KEY_free(pubKey);
+    if (x != NULL) BN_free(x);
+    if (y != NULL) BN_free(y);
+    if (r != NULL) BN_free(r);
+    if (s != NULL) BN_free(s);
+    if (signature != NULL) ECDSA_SIG_free(signature);
+
+    if (errorMsg != NULL) {
+	Scm_Error(errorMsg);
+    }
+
+    return result;
+}
+
+ScmObj signWithKey(const char * curveType, const ScmUVector *DGST, const ScmUVector *PRV)
+{
+    char * errorMsg = NULL;
+
+    BIGNUM *prv = ScmUVectorToBignum(PRV);
     /* TODO curve */
-    int nid = EC_curve_nist2nid("P-256");
+    /* "P-256" "P-384" "P-521" */
+    const int nid = EC_curve_nist2nid(curveType);
+
+    /* TODO reconsider */
+    if (nid <= 0) {
+	errorMsg = "CurveType not found.";
+	goto exit;
+    }
+
     EC_KEY * privKey = EC_KEY_new_by_curve_name(nid);
 
     if (! EC_KEY_set_private_key(privKey, prv)) {
-	Scm_Error("Failed to set private key");
+	errorMsg = "Failed to set private key";
+	goto exit;
     }
 
-    int sigSize = ECDSA_size(privKey);
+    const int sigSize = ECDSA_size(privKey);
 
     /* TODO malloc? */
     unsigned char sig[1024];
     unsigned int siglen;
+    const char * dgst = (char *)SCM_UVECTOR_ELEMENTS(DGST);
+    const int dgstlen = SCM_UVECTOR_SIZE(DGST);
 
-    if (! ECDSA_sign(0, dgst, dgstlen, sig, &siglen, privKey)) {
-	Scm_Error("Failed to sign by private key");
+    const int signResult = ECDSA_sign(0, dgst, dgstlen, sig, &siglen, privKey);
+
+    if (! signResult) {
+	errorMsg = "Failed to sign by private key";
+	goto exit;
     }
 
-    return Scm_MakeString(sig, siglen, siglen, SCM_STRING_COPYING);
+    const ScmObj result = Scm_MakeString(sig, siglen, siglen, SCM_STRING_COPYING);
+
+exit:
+    if (privKey != NULL) EC_KEY_free(privKey);
+    if (prv != NULL) BN_free(prv);
+
+    if (errorMsg != NULL ) {
+	Scm_Error(errorMsg);
+    }
+
+    return result;
 }
 
 /*

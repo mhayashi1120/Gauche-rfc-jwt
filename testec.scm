@@ -1,4 +1,5 @@
 
+(use gauche.uvector)
 (use file.util)
 (use rfc.json)
 (use gauche.test)
@@ -13,6 +14,8 @@
 (call-test)
 
 (call-test-ecdsa)
+
+#?= (do-sign "P-255" (string->u8vector "A") (string->u8vector ""))
 
 (define (read-json file)
   (with-input-from-file file parse-json))

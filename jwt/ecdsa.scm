@@ -15,6 +15,9 @@
 
    ;; Like rfc.hmac library
    <ecdsa> ecdsa-update! ecdsa-final! ecdsa-digest ecdsa-digest-string
+
+   ;; TODO hide
+   do-sign do-verify
    )
   )
 (select-module jwt.ecdsa)

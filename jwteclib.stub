@@ -20,6 +20,24 @@
   ;; (return (cast ScmString* (test_ecdsa)))
   (return (SCM_STRING (test_ecdsa))))
 
+;; (define-ctype ScmECPoint::(.struct
+;;                            (SCM_HEADER :: ""
+;;                                        name
+;;                                        point::EC_POINT ; NULL if closed
+;;                                        )))
+
+;; (define-cclass <ec-point> ScmECPoint* "Scm_ECPointClass" ()
+;;   ()
+;;   [printer
+;;     (Scm_Printf port "#<ec-point %S>" (-> (SCM_GDBM_FILE obj) name))])
+
+(define-cproc do-sign (curve-type::<string> d::<u8vector> body::<u8vector>) :: <string>
+  (return
+   (SCM_STRING (signWithKey (Scm_GetStringConst curve-type) body d))))
+
+(define-cproc do-verify (curve-type::<string> r::<u8vector> s::<u8vector> x::<u8vector> y::<u8vector>) :: <pair>
+  )
+
 (define-cproc test-pass-arg (s::<string> bn::<u8vector>) :: <pair>
   (let* ([cp :: (uint8_t *) (SCM_UVECTOR_ELEMENTS bn)]
          ;; [bn-size (SCM_UVECTOR_SIZE bn)]

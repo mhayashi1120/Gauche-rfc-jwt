@@ -52,7 +52,7 @@ try : all
 all : $(TARGET)
 
 # TODO remove --keep-c-files after debug
-jwtec.$(SOEXT): $(jwt_SRCS)
+jwtec.$(SOEXT): $(jwt_SRCS) jwtec.h
 	$(GAUCHE_PACKAGE) compile \
 	  --keep-c-files \
 	  --ldflags=$(LDFLAGS) \
