@@ -10,14 +10,24 @@
 ;; The following entry is a dummy one.
 ;; Replace it for your definitions.
 
-(define-cproc test-jwteclib () ::<const-cstring>
+(define-cproc test-jwteclib () :: <const-cstring>
   (result "jwteclib stub is working"))
 
-(define-cproc test-jwtec () ::<const-cstring>
+(define-cproc test-jwtec () :: <string>
   "SCM_RETURN(test_jwtec());")
 
-(define-cproc test-ecdsa () ::<const-cstring>
-  "SCM_RETURN(test_ecdsa());")
+(define-cproc test-ecdsa () :: <string>
+  ;; (return (cast ScmString* (test_ecdsa)))
+  (return (SCM_STRING (test_ecdsa))))
+
+(define-cproc test-pass-arg (s::<string> bn::<u8vector>) :: <pair>
+  (let* ([cp :: (uint8_t *) (SCM_UVECTOR_ELEMENTS bn)]
+         ;; [bn-size (SCM_UVECTOR_SIZE bn)]
+         [size :: int (Scm_UVectorSizeInBytes bn)])
+    (return (SCM_PAIR (list
+                       (SCM_OBJ s)
+                       (Scm_MakeU8VectorFromArray size cp)
+                       (Scm_MakeInteger size))))))
 
 
 ;; Local variables:

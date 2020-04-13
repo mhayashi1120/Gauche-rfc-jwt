@@ -33,6 +33,8 @@
 
 (define (call-test-ecdsa)
   #?= (test-ecdsa)
+
+  #?= (test-pass-arg "ABCDあいうえお" #u8(1 2 5 100 128))
   )
 
 (define (call-test)

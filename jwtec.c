@@ -51,6 +51,15 @@ ScmObj test_ecdsa(void)
 /* BIGNUM *BN_bin2bn(const unsigned char *s, int len, BIGNUM *ret); */
 /* int BN_bn2bin(const BIGNUM *a, unsigned char *to); */
 
+
+/* id: 415 name: P-256 */
+/* id: 715 name: P-384 */
+/* id: 716 name: P-521 */
+
+    /* | ES256             | ECDSA using P-256 and SHA-256 | */
+    /* | ES384             | ECDSA using P-384 and SHA-384 | */
+    /* | ES512             | ECDSA using P-521 and SHA-512 | */
+
     BIGNUM* bn1 = BN_new();
     unsigned char *s = "\377";
     unsigned char s2[256];
@@ -67,9 +76,64 @@ ScmObj test_ecdsa(void)
 
     ECDSA_SIG_free(sig);
 
+
+    EC_builtin_curve curves[1024];
+    EC_builtin_curve * curve = curves;
+    /* size_t i = EC_get_builtin_curves(&curve, 0); */
+    /* if (i > 0) { */
+    /* 	printf("%d %s: %s\n", curve.nid, EC_curve_nid2nist(curve.nid), curve.comment); */
+    /* } */
+    
+    int i = 0;
+    size_t size;
+    while (i < 30 && ((size = EC_get_builtin_curves(curve, 1024)) != 0))
+    {
+    	printf("%d %s: %s size: %d\n", curve->nid, EC_curve_nid2nist(curve->nid), curve->comment, size);
+    	i++;
+    }
+
+    i = 0;
+    while (i < 1000) {
+	const char * name = EC_curve_nid2nist(i);
+
+	if (name != NULL) {
+	    printf("id: %d name: %s\n", i, name);
+	}
+
+	i++;
+    }
+
+    printf("id: %d\n", EC_curve_nist2nid("P-256"));
+    printf("id: %d\n", EC_curve_nist2nid("P-384"));
+    printf("id: %d\n", EC_curve_nist2nid("P-521"));
+    
+
     return SCM_MAKE_STR("HOGEあいうえお");
 }
     
+
+ScmObj signWithKey(BIGNUM *prv, const unsigned char *dgst, int dgstlen)
+{
+    /* TODO curve */
+    int nid = EC_curve_nist2nid("P-256");
+    EC_KEY * privKey = EC_KEY_new_by_curve_name(nid);
+
+    if (! EC_KEY_set_private_key(privKey, prv)) {
+	Scm_Error("Failed to set private key");
+    }
+
+    int sigSize = ECDSA_size(privKey);
+
+    /* TODO malloc? */
+    unsigned char sig[1024];
+    unsigned int siglen;
+
+    if (! ECDSA_sign(0, dgst, dgstlen, sig, &siglen, privKey)) {
+	Scm_Error("Failed to sign by private key");
+    }
+
+    return Scm_MakeString(sig, siglen, siglen, SCM_STRING_COPYING);
+}
 
 /*
  * Module initialization function.

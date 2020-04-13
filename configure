@@ -45,17 +45,28 @@
 ;; Here you can add feature tests and other cf-define's.
 (cf-lang (instance-of <c-language>))
 
-(cf-subst 'LIBS "")
+;; These subsutitutions come from environment. Maybe empty.
+(unless (cf-have-subst? 'LIBS)
+  (cf-subst 'LIBS ""))
+(unless (cf-have-subst? 'LDFLAGS)
+  (cf-subst 'LDFLAGS ""))
+
+(cf-subst 'ARCH_LIBSSL_DEPENDS "")
+(cf-subst 'SCM_LIBSSL_DEPENDS "")
 
 (when my-activate-libssl
   (cf-check-headers '("openssl/conf.h"))
   (cf-check-headers '("openssl/ec.h"))
 
-  ;; Early entry point of FN
+  ;; Checking early entry point FN of LIB
+
   (unless (memq 'libcrypto my-with-packages)
     (cf-check-lib "crypto" "NCONF_new"))
   (unless (memq 'libssl my-with-packages)
-    (cf-check-lib "ssl" "EC_KEY_new")))
+    (cf-check-lib "ssl" "EC_KEY_new"))
+  (cf-subst 'ARCH_LIBSSL_DEPENDS "jwtec.$(SOEXT)")
+  (cf-subst 'SCM_LIBSSL_DEPENDS "$(srcdir)/jwt/ecdsa.scm")
+  )
 
 ;; Output
 (cf-output-default)
