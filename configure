@@ -53,6 +53,7 @@
 
 (cf-subst 'ARCH_LIBSSL_DEPENDS "")
 (cf-subst 'SCM_LIBSSL_DEPENDS "")
+(cf-subst 'TEST_LIBSSL_DEPENDS "")
 
 (when my-activate-libssl
   (cf-check-headers '("openssl/conf.h"))
@@ -66,6 +67,7 @@
     (cf-check-lib "ssl" "EC_KEY_new"))
   (cf-subst 'ARCH_LIBSSL_DEPENDS "jwtec.$(SOEXT)")
   (cf-subst 'SCM_LIBSSL_DEPENDS "$(srcdir)/jwt/ecdsa.scm")
+  (cf-subst 'TEST_LIBSSL_DEPENDS "$(srcdir)/test-ecdsa.scm")
   )
 
 ;; Output

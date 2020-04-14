@@ -29,6 +29,7 @@ PACKAGE   = Gauche-jwt
 
 ARCH_LIBSSL_DEPENDS = @ARCH_LIBSSL_DEPENDS@
 SCM_LIBSSL_DEPENDS = @SCM_LIBSSL_DEPENDS@
+TEST_LIBSSL_DEPENDS = @TEST_LIBSSL_DEPENDS@
 
 ARCHFILES = $(ARCH_LIBSSL_DEPENDS)
 SCMFILES  = $(srcdir)/jwt.scm $(srcdir)/jwt/rsa.scm $(SCM_LIBSSL_DEPENDS)
@@ -47,7 +48,7 @@ jwt_SRCS = $(srcdir)/jwtec.c $(srcdir)/jwteclib.stub
 
 # TODO remove this target after debug
 try : all
-	$(GOSH) -I. -I$(srcdir) $(srcdir)/testec.scm > testec.log
+	$(GOSH) -I. -I$(srcdir) $(srcdir)/test-ecdsa.scm > test-ecdsa.log
 
 all : $(TARGET)
 
@@ -61,7 +62,7 @@ jwtec.$(SOEXT): $(jwt_SRCS) jwtec.h
 
 check : all
 	@rm -f test.log
-	$(GOSH) -I. -I$(srcdir) $(srcdir)/test.scm > test.log
+	$(GOSH) -I. -I$(srcdir) $(srcdir)/test.scm $(TEST_LIBSSL_DEPENDS) > test.log
 
 install : all
 	$(INSTALL) -m 444 -T $(GAUCHE_PKGINCDIR) $(HEADERS)
