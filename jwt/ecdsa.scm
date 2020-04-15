@@ -6,19 +6,17 @@
   (use rfc.base64)
   (use rfc.sha1)
   (use gauche.uvector)
+  (use jwk.ref)
   (use util.match)
   (export
    ;; rsa-hasher decode-rsa rsa-sha
 
    list-builtin-curves
 
-   ;; Like rfc.hmac library
-   <ecdsa> ecdsa-update! ecdsa-final! ecdsa-digest ecdsa-digest-string
+   ecdsa-sign ecdsa-verify
 
    <ecdsa-private-key> <ecdsa-public-key>
-
-   ;; TODO hide
-   do-sign do-verify
+   read-jwk-private read-jwk-public
    )
   )
 (select-module jwt.ecdsa)
@@ -29,55 +27,54 @@
 (define-class <ecdsa-private-key> ()
   (
    (curve-name :init-keyword :curve-name)
+   (hasher :init-keyword :hasher)
    (D :init-keyword :D)
    ))
 
 (define-class <ecdsa-public-key> ()
   (
    (curve-name :init-keyword :curve-name)
+   (hasher :init-keyword :hasher)
    ;; TODO
    (X :init-keyword :X)
    (Y :init-keyword :Y)
    ))
 
-(define-class <ecdsa> ()
-  ((key :getter key-of)
-   (hasher :getter hasher-of)))
-
 ;;;
 ;;; TODO Scheme <-> C
 ;;;
 
+(define (ensure-curve-name)
+  )
 
-(define-method initialize ((self <ecdsa>) initargs)
-  (next-method)
-  (let-keywords initargs
-      ([key #f]
-       [hasher #f]
-       ;; [block-size #f]
-       )
+(define (read-jwk-private jwk-node)
+  (make <ecdsa-private-key>
     ;; TODO
-    ))
+    :curve-name "P-256"
+    :hasher <sha256>
+    :D (bignum-ref jwk-node "d")))
 
-(define-method ecdsa-update! ((self <ecdsa>) data)
-  (digest-update! (hasher-of self) data))
+(define (read-jwk-public jwk-node)
+  (make <ecdsa-public-key>
+    ;; TODO
+    :curve-name "P-256"
+    :hasher <sha256>
+    :X (bignum-ref jwk-node "x")
+    :Y (bignum-ref jwk-node "y")))
 
-(define-method ecdsa-final! ((self <ecdsa>))
-  (let* ((v (string->u8vector (key-of self)))
-         (opad (u8vector->string (u8vector-xor v #x5c)))
-         (inner (digest-final! (hasher-of self)))
-         (outer (digest-string (class-of (hasher-of self))
-                               (string-append opad inner))))
-    outer))
+(define (ecdsa-verify public-key signing-input signature)
+  (let* ([digest (string->u8vector (digest-string (~ public-key'hasher) signing-input))])
+    ;; TODO split
+    (receive (r s) (values (string->u8vector (string-copy signature 0 (/ (string-length signature) 2)))
+                           (string->u8vector (string-copy signature (/ (string-length signature) 2))))
+      (do-verify (~ public-key 'curve-name)
+                 digest r s
+                 (bignum->u8vector (~ public-key'X))
+                 (bignum->u8vector (~ public-key'Y))))))
 
-(define (ecdsa-digest . args)
-  (let1 ecdsa (apply make <ecdsa> args)
-    (generator-for-each
-     (cut ecdsa-update! ecdsa <>)
-     (cut read-block 4096))
-    (ecdsa-final! ecdsa)))
+(define (ecdsa-sign private-key signing-input)
+  (let* ([digest (digest-string (~ private-key'hasher) signing-input)])
+    (receive (r s) (do-sign (~ private-key 'curve-name) (string->u8vector digest) (bignum->u8vector (~ private-key'D)))
+      (u8vector->string (u8vector-concatenate (list r s))))))
 
-(define (ecdsa-digest-string string . args)
-  (with-input-from-string string
-    (cut apply ecdsa-digest args)))
 
