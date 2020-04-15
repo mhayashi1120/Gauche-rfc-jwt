@@ -16,6 +16,8 @@
    ;; Like rfc.hmac library
    <ecdsa> ecdsa-update! ecdsa-final! ecdsa-digest ecdsa-digest-string
 
+   <ecdsa-private-key> <ecdsa-public-key>
+
    ;; TODO hide
    do-sign do-verify
    )
@@ -24,6 +26,20 @@
 
 ;; Loads extension (To use Openssl libssl)
 (dynamic-load "jwtec")
+
+(define-class <ecdsa-private-key> ()
+  (
+   (curve-name :init-keyword :curve-name)
+   (D :init-keyword :D)
+   ))
+
+(define-class <ecdsa-public-key> ()
+  (
+   (curve-name :init-keyword :curve-name)
+   ;; TODO
+   (X :init-keyword :X)
+   (Y :init-keyword :Y)
+   ))
 
 (define-class <ecdsa> ()
   ((key :getter key-of)
