@@ -10,6 +10,7 @@
   (use rfc.json)
   (use rfc.hmac)
   (use rfc.base64)
+  (use jwk.ref)
   (export
 
    construct-jwt-header construct-jwt-payload
@@ -26,12 +27,6 @@
 ;;;
 ;;; Basic
 ;;;
-
-(define (base64-urlencode s)
-  (string-trim-right (base64-encode-string s :line-width #f :url-safe #t) #[=]))
-
-(define (base64-urldecode s)
-  (base64-decode-string s :url-safe #t))
 
 (define (hmac-sha s key hasher)
   (hmac-digest-string s :key key :hasher hasher))

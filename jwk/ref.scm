@@ -1,4 +1,5 @@
 (define-module jwk.ref
+  (use srfi-13)
   (use rfc.base64)
   (use util.match)
   (use gauche.uvector)
@@ -38,8 +39,14 @@
       (loop (ash i -8) (cons (logand #xff i) l))])))
 
 (define (b64->bignum s)
-  (let1 b (base64-decode-string s :url-safe #t)
+  (let1 b (base64-urldecode s)
     (string->bignum b)))
 
 (define (bignum-ref key item)
   (b64->bignum (assoc-ref key item)))
+
+(define (base64-urlencode s)
+  (string-trim-right (base64-encode-string s :line-width #f :url-safe #t) #[=]))
+
+(define (base64-urldecode s)
+  (base64-decode-string s :url-safe #t))

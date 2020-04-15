@@ -6,6 +6,11 @@
 (use rfc.json)
 (use gauche.test)
 
+(test-start "jwk")
+(use jwk.ref)
+(test-module 'jwk.ref)
+
+(test-end :exit-on-failure #t)
 
 (test-start "jwt")
 (use jwt)
