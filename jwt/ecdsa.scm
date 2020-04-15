@@ -8,10 +8,9 @@
   (use gauche.uvector)
   (use util.match)
   (export
-   call-test
-
-   call-test-ecdsa
    ;; rsa-hasher decode-rsa rsa-sha
+
+   list-builtin-curves
 
    ;; Like rfc.hmac library
    <ecdsa> ecdsa-update! ecdsa-final! ecdsa-digest ecdsa-digest-string
@@ -46,28 +45,8 @@
    (hasher :getter hasher-of)))
 
 ;;;
-;;; Testing Scheme <-> C
+;;; TODO Scheme <-> C
 ;;;
-
-
-(define (call-test-ecdsa)
-  #?= (test-ecdsa)
-
-  #?= (test-pass-arg "ABCDあいうえお" #u8(1 2 5 100 128))
-  )
-
-(define (call-test)
-  #?= "Calling stub proc"
-  #?= (test-jwteclib)
-  #?= "Calling entry C proc"
-  #?= (test-jwtec)
-  )
-
-;; TODO consideration
-;; Scheme <=> C
-;; <number> <=> <u8vector> <=> OctetString 
-;; 
-;; like hmac-digest interface
 
 
 (define-method initialize ((self <ecdsa>) initargs)

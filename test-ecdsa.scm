@@ -13,11 +13,6 @@
 ;; TODO remove it after debug
 (debug-print-width #f)
 
-(call-test)
-
-(call-test-ecdsa)
-
-
 (define (read-json file)
   (with-input-from-file file parse-json))
 
@@ -37,6 +32,7 @@
     :X (bignum-ref json-node "x")
     :Y (bignum-ref json-node "y")))
 
+#?= (list-builtin-curves)
 
 (let* ([jwk-key (read-json "tests/rfc7515-a-3-jwkkey.json")]
        [header (read-json "tests/rfc7515-a-3-header.json")]
@@ -47,19 +43,14 @@
        ;; [token (jwt-encode header payload privKey)]
        [dgst (string->u8vector (digest-string <sha256> signingInput))])
 
-    (receive (r s)  #?= (do-sign "P-256" dgst (bignum->u8vector (~ privKey'D)))
-             (with-output-to-file "/home/masa/tmp/hoge.der"
-               (^[] (write-uvector r)
-                 (write-uvector s)))
+    (receive (r s)  (do-sign "P-256" dgst (bignum->u8vector (~ privKey'D)))
 
-    (let* (;; [s #?= (list->u8vector (iota 32 1))]
-           [pubKey (read-jwk-public jwk-key)]
-           )
+      (let* ([pubKey (read-jwk-public jwk-key)])
       
-      #?= (do-verify "P-256" dgst r s (bignum->u8vector (~ pubKey'X)) (bignum->u8vector (~ pubKey'Y)))
-      ;; (test* "Described in RFC Appendix A.3"
-      ;;        (file->string "tests/rfc7515-a-3-result.txt") token)
-      )))
+        #?= (do-verify "P-256" dgst r s (bignum->u8vector (~ pubKey'X)) (bignum->u8vector (~ pubKey'Y)))
+        ;; (test* "Described in RFC Appendix A.3"
+        ;;        (file->string "tests/rfc7515-a-3-result.txt") token)
+        )))
 
 ;; If you don't want `gosh' to exit with nonzero status even if
 ;; the test fails, pass #f to :exit-on-failure.

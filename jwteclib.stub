@@ -7,36 +7,17 @@
  (.include "jwtec.h")
  )
 
-;; The following entry is a dummy one.
-;; Replace it for your definitions.
-
-(define-cproc test-jwteclib () :: <const-cstring>
-  (result "jwteclib stub is working"))
-
-(define-cproc test-jwtec () :: <string>
-  "SCM_RETURN(test_jwtec());")
-
-(define-cproc test-ecdsa () :: <string>
-  ;; (return (cast ScmString* (test_ecdsa)))
-  (return (SCM_STRING (test_ecdsa))))
-
-;; (define-ctype ScmECPoint::(.struct
-;;                            (SCM_HEADER :: ""
-;;                                        name
-;;                                        point::EC_POINT ; NULL if closed
-;;                                        )))
-
-;; (define-cclass <ec-point> ScmECPoint* "Scm_ECPointClass" ()
-;;   ()
-;;   [printer
-;;     (Scm_Printf port "#<ec-point %S>" (-> (SCM_GDBM_FILE obj) name))])
-
 (define-cproc do-sign (curve-type::<string> body::<u8vector> d::<u8vector>) :: <string>
   (return
    (SCM_STRING (signWithKey (Scm_GetStringConst curve-type) body d))))
 
 (define-cproc do-verify (curve-type::<string> dgst::<u8vector> r::<u8vector> s::<u8vector> x::<u8vector> y::<u8vector>)
   (return (verifyByKey (Scm_GetStringConst curve-type) dgst r s x y)))
+
+;; list of ITEM
+;; ITEM : #(nid nist-name ln sn comment)
+(define-cproc list-builtin-curves ()
+  (return (getBuiltinCurves)))
 
 (define-cproc test-pass-arg (s::<string> bn::<u8vector>) :: <pair>
   (let* ([cp :: (uint8_t *) (SCM_UVECTOR_ELEMENTS bn)]

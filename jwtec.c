@@ -140,86 +140,62 @@
  * your C function definitions.
  */
 
-/* TODO Debug Print */
-void dp(const char * s)
+static ScmObj getMaybeName(const char * name)
 {
-    printf("%s\n", s);
-    fflush(stdout);
+    if (name == NULL) {
+	return SCM_FALSE;
+    }
+
+    return SCM_MAKE_STR_COPYING(name);
 }
 
-ScmObj test_jwtec(void)
+ScmObj getBuiltinCurves()
 {
-    return SCM_MAKE_STR("jwtec is working");
-}
+    char * errorMsg = NULL;
 
-ScmObj test_ecdsa(void)
-{
-    ECDSA_SIG * sig = ECDSA_SIG_new();
-
-    EC_KEY * key = EC_KEY_new();
-
-    BIGNUM * bn1 = BN_new();
-    unsigned char *s = "\377";
-    unsigned char s2[256];
-
-    BN_bin2bn(s, 2, bn1);
-
-    int len = BN_bn2bin(bn1, s2);
-    /* fprintf(stdout, "len: %d", len); */
-    /* BN_print_fp(stdout, bn1); */
-
-    BN_clear_free(bn1);
-
-    EC_KEY_free(key);
-
-    ECDSA_SIG_free(sig);
-
-    EC_builtin_curve curves[2048];
     size_t crv_len = EC_get_builtin_curves(NULL, 0);
 
-    printf("curve length: %d\n", crv_len);
+    /* TODO how to release? */
+    EC_builtin_curve * curves = SCM_NEW_ARRAY(EC_builtin_curve, crv_len);
 
     if (!EC_get_builtin_curves(curves, crv_len)) {
-	printf("unable get curves\n");
+	errorMsg = "Unable get curves";
+	goto exit;
     }
-	
-    int i = 0;
-    EC_builtin_curve * curve = curves;
 
-    while (i < crv_len)
+    ScmObj result = SCM_NIL;
+
+    /* Start from tail */
+    EC_builtin_curve * curve = curves + crv_len - 1;
+
+    for (int i = 0; i < crv_len; i++, curve--)
     {
 	const char * comment = curve->comment;
 	const int nid = curve->nid;
-	
-	printf("nid: %d Comment: %s", nid, comment);
-
 	const char * name = EC_curve_nid2nist(nid);
-
-	printf(" NIST name: %s", name);
-	
 	const char * ln = OBJ_nid2ln(nid);
-	printf(" LN: %s", ln);
-
 	const char * sn = OBJ_nid2sn(nid);
-	printf(" SN: %s", sn);
 
+	ScmObj item = SCM_NIL;
 
-	printf("\n");
+	item = Scm_Cons(Scm_MakeInteger(nid), item);
+	item = Scm_Cons(getMaybeName(name), item);
+	item = Scm_Cons(getMaybeName(ln), item);
+	item = Scm_Cons(getMaybeName(sn), item);
+	item = Scm_Cons(getMaybeName(comment), item);
 
-	curve++;
-	i++;
+	result = Scm_Cons(Scm_ListToVector(item, 0, -1), result);
     }
 
-    printf("name: %s -> id: %d\n", "P-256", EC_curve_nist2nid("P-256"));
-    printf("name: %s -> id: %d\n", "P-384", EC_curve_nist2nid("P-384"));
-    printf("name: %s -> id: %d\n", "P-521", EC_curve_nist2nid("P-521"));
-    
+exit:
 
-    fflush(stdout);
-    
-    return SCM_MAKE_STR("HOGEあいうえお");
+    if (errorMsg != NULL) {
+	Scm_Error(errorMsg);
+    }
+
+    return result;
 }
-    
+
 BIGNUM * ScmUVectorToBignum(const ScmUVector * v)
 {
     BIGNUM * bn = BN_new();
@@ -301,16 +277,14 @@ ScmObj verifyByKey(const char *curveType, const ScmUVector *DGST,
     result = SCM_TRUE;
 
 exit:
-    /* TODO when not initialized, what value is ? */
     if (pubKey != NULL) EC_KEY_free(pubKey);
     if (x != NULL) BN_free(x);
     if (y != NULL) BN_free(y);
+
+    /* This is cleared by  ECDSA_SIG_free() */
     /* if (r != NULL) BN_free(r); */
     /* if (s != NULL) BN_free(s); */
-/* TODO */
-dp("12");
     if (signature != NULL) ECDSA_SIG_free(signature);
-dp("13");
 
     if (errorMsg != NULL) {
 	Scm_Error(errorMsg);
@@ -320,7 +294,7 @@ dp("13");
 }
 
 /* TODO curveType: accept nist / sn */
-
+/* Return: R and S signed values as <u8vector>. */
 ScmObj signWithKey(const char * curveType, const ScmUVector * DGST, const ScmUVector * PRV)
 {
     char * errorMsg = NULL;
@@ -331,8 +305,11 @@ ScmObj signWithKey(const char * curveType, const ScmUVector * DGST, const ScmUVe
 
     /* TODO curve */
     /* "P-256" "P-384" "P-521" */
-    const int nid = EC_curve_nist2nid(curveType);
-    /* TODO OBJ_sn2nid */
+    int nid = EC_curve_nist2nid(curveType);
+
+    if (nid == NID_undef) {
+	nid = OBJ_sn2nid(curveType);
+    }
 
     /* TODO reconsider */
     if (nid <= 0) {
