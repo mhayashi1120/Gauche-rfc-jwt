@@ -231,19 +231,6 @@ BIGNUM * ScmUVectorToBignum(const ScmUVector * v)
     return bn;
 }
 
-void CopyToU8vector(ScmUVector * v, int from, char * x, int size)
-{
-printf("from: %d to: %d\n", from, from + size);
-
-    for (int src = 0; src < size; src++) {
-	int dst = src + from;
-
-printf("%x", x[src]);
-fflush(stdout);
-	Scm_UVectorSet(v, SCM_UVECTOR_U8, dst, Scm_MakeIntegerU(x[src]), SCM_CLAMP_ERROR);
-    }
-}
-
 ScmObj ECSignatureToVectors(const ECDSA_SIG * signature)
 {
     BIGNUM * r = NULL, * s = NULL;
@@ -259,9 +246,6 @@ ScmObj ECSignatureToVectors(const ECDSA_SIG * signature)
 
     ScmObj scm_r = Scm_MakeUVector(SCM_CLASS_U8VECTOR, sizeR, R);
     ScmObj scm_s = Scm_MakeUVector(SCM_CLASS_U8VECTOR, sizeS, S);
-
-    /* CopyToU8vector(v, 0, R, sizeR); */
-    /* CopyToU8vector(v, sizeR, S, sizeS); */
 
     ScmObj result = Scm_Values2(scm_r, scm_s);
 
@@ -284,56 +268,48 @@ ScmObj verifyByKey(const char *curveType, const ScmUVector *DGST,
 
     x = ScmUVectorToBignum(X);
     y = ScmUVectorToBignum(Y);
-dp("1");
+
     const int nid = EC_curve_nist2nid(curveType);
     pubKey = EC_KEY_new_by_curve_name(nid);
 
-dp("2");
     /* x, y seems non changed const values */
     if (! EC_KEY_set_public_key_affine_coordinates(pubKey, (BIGNUM*)x, (BIGNUM*)y)) {
-	errorMsg = "Failed to set public key";
+	errorMsg = "Failed to set public key.";
 	goto exit;
     }
 
-dp("3");
     signature = ECDSA_SIG_new();
 
     r = ScmUVectorToBignum(R);
     s = ScmUVectorToBignum(S);
 
-dp("4");
-    /* TODO check result */
-    ECDSA_SIG_set0(signature, r, s);
+    if (!ECDSA_SIG_set0(signature, r, s)) {
+	errorMsg = "Failed to set signature.";
+	goto exit;
+    }
 
     const int sigSize = ECDSA_size(pubKey);
     const char * dgst = (char*)SCM_UVECTOR_ELEMENTS(DGST);
     const int dgstlen = SCM_UVECTOR_SIZE(DGST);
     const int verifyResult = ECDSA_do_verify(dgst, dgstlen, signature, pubKey);
     
-dp("5");
     if (! verifyResult) {
-dp("5.1");
 	result = SCM_FALSE;
 	goto exit;
     }
     
-dp("6");
     result = SCM_TRUE;
 
 exit:
-dp("7");
     /* TODO when not initialized, what value is ? */
     if (pubKey != NULL) EC_KEY_free(pubKey);
-dp("8");
     if (x != NULL) BN_free(x);
     if (y != NULL) BN_free(y);
-dp("10");
-    if (r != NULL) BN_free(r);
-dp("11");
-    if (s != NULL) BN_free(s);
-dp("12");
+    /* if (r != NULL) BN_free(r); */
+    /* if (s != NULL) BN_free(s); */
 /* TODO */
-    /* if (signature != NULL) ECDSA_SIG_free(signature); */
+dp("12");
+    if (signature != NULL) ECDSA_SIG_free(signature);
 dp("13");
 
     if (errorMsg != NULL) {
@@ -366,43 +342,17 @@ ScmObj signWithKey(const char * curveType, const ScmUVector * DGST, const ScmUVe
 
     privKey = EC_KEY_new_by_curve_name(nid);
 
+    /* TODO reconsider */
     EC_KEY_set_asn1_flag(privKey, OPENSSL_EC_NAMED_CURVE);
     EC_KEY_set_conv_form(privKey, POINT_CONVERSION_UNCOMPRESSED);
 
-    /* TODO BN_is_zero when prv is zero eternal loop? */
-printf("PRV: ");
-BN_print_fp(stdout, prv);
-fflush(stdout);
     if (! EC_KEY_set_private_key(privKey, prv)) {
 	errorMsg = "Failed to set private key";
 	goto exit;
     }
 
-    const int sigSize = ECDSA_size(privKey);
-printf("sigSize: %d\n", sigSize);
-fflush(stdout);
-
-    /* TODO malloc? */
-    unsigned char sig[1024];
-    unsigned int siglen;
     const char * dgst = (char *)SCM_UVECTOR_ELEMENTS(DGST);
     const int dgstlen = SCM_UVECTOR_SIZE(DGST);
-printf("DGSTLEN: %d\n", dgstlen);
-fflush(stdout);
-    /* const int signResult = ECDSA_sign(0, dgst, dgstlen, sig, &siglen, privKey); */
-
-/* printf("SIGLEN: %d\n", siglen); */
-/* fflush(stdout); */
-
-    /* if (! signResult) { */
-    /* 	errorMsg = "Failed to sign by private key"; */
-    /* 	goto exit; */
-    /* } */
-
-/* printf("SIG: %s\n", sig); */
-/* fflush(stdout); */
-
-    /* ScmObj result = Scm_MakeString(sig, siglen, siglen, SCM_STRING_COPYING); */
 
     const ECDSA_SIG * signature = ECDSA_do_sign(dgst, dgstlen, privKey);
 
@@ -411,7 +361,7 @@ fflush(stdout);
 	goto exit;
     }
 
-    ScmObj result = SCM_OBJ(ECSignatureToVectors(signature));
+    ScmObj result = ECSignatureToVectors(signature);
 
 exit:
     if (privKey != NULL) EC_KEY_free(privKey);
