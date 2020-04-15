@@ -32,7 +32,9 @@ SCM_LIBSSL_DEPENDS = @SCM_LIBSSL_DEPENDS@
 TEST_LIBSSL_DEPENDS = @TEST_LIBSSL_DEPENDS@
 
 ARCHFILES = $(ARCH_LIBSSL_DEPENDS)
-SCMFILES  = $(srcdir)/jwt.scm $(srcdir)/jwt/rsa.scm $(SCM_LIBSSL_DEPENDS)
+SCMFILES  = $(srcdir)/jwt.scm $(srcdir)/jwt/rsa.scm \
+	$(srcdir)/jwk/ref.scm \
+	$(SCM_LIBSSL_DEPENDS)
 HEADERS   =
 
 TARGET    = $(ARCHFILES)
