@@ -6,6 +6,7 @@
 (use rfc.json)
 (use gauche.test)
 
+
 (test-start "jwt")
 (use jwt)
 (test-module 'jwt)
@@ -39,25 +40,14 @@
     (test* "payload1" payload1 payload)
     ))
 
+(test-end :exit-on-failure #t)
+
 (test-start "jwt.rsa")
 (use jwt.rsa)
 (test-module 'jwt.rsa)
 
-(define (read-jwk-private json-node)
-  (make <rsa-private>
-    :N (bignum-ref json-node "n")
-    :D (bignum-ref json-node "d")))
-
-(define (read-jwk-public json-node)
-  (make <rsa-public>
-    :N (bignum-ref json-node "n")
-    :E (bignum-ref json-node "e")))
-
 (define (read-json file)
   (with-input-from-file file parse-json))
-
-(define (bignum-ref key item)
-  ((with-module jwt.rsa b64->bignum) (assoc-ref key item)))
 
 (let* ([jwk-key (read-json "tests/rfc7515-a-2-private-key.json")]
        [header (read-json "tests/rfc7515-a-2-header.json")]
@@ -71,7 +61,4 @@
 ;; If you don't want `gosh' to exit with nonzero status even if
 ;; the test fails, pass #f to :exit-on-failure.
 (test-end :exit-on-failure #t)
-
-
-
 

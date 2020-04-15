@@ -4,6 +4,7 @@
   (use gauche.uvector)
   (export-all))
 (select-module jwk.ref)
+
 ;;;
 ;;; OctetString <-> Gauche integer
 ;;;

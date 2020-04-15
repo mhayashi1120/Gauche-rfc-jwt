@@ -46,10 +46,6 @@ GAUCHE_PKGARCHDIR = "$(DESTDIR)@GAUCHE_PKGARCHDIR@"
 
 jwt_SRCS = $(srcdir)/jwtec.c $(srcdir)/jwteclib.stub
 
-# TODO remove this target after debug
-try : all
-	$(GOSH) -I. -I$(srcdir) $(srcdir)/test-ecdsa.scm > test-ecdsa.log
-
 all : $(TARGET)
 
 # TODO remove --keep-c-files after debug
@@ -62,7 +58,7 @@ jwtec.$(SOEXT): $(jwt_SRCS) jwtec.h
 
 check : all
 	@rm -f test.log
-	$(GOSH) -I. -I$(srcdir) $(srcdir)/test.scm $(TEST_LIBSSL_DEPENDS) > test.log
+	$(GOSH) -I. -I$(srcdir) $(TEST_LIBSSL_DEPENDS) $(srcdir)/test.scm > test.log
 
 install : all
 	$(INSTALL) -m 444 -T $(GAUCHE_PKGINCDIR) $(HEADERS)

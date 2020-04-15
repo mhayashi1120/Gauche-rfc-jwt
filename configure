@@ -67,7 +67,7 @@
     (cf-check-lib "ssl" "EC_KEY_new"))
   (cf-subst-append 'ARCH_LIBSSL_DEPENDS "jwtec.$(SOEXT)")
   (cf-subst-append 'SCM_LIBSSL_DEPENDS "$(srcdir)/jwt/ecdsa.scm")
-  (cf-subst-append 'TEST_LIBSSL_DEPENDS "$(srcdir)/test-ecdsa.scm")
+  (cf-subst-append 'TEST_LIBSSL_DEPENDS "-l $(srcdir)/test-ecdsa.scm")
   )
 
 ;; Output

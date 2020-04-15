@@ -1,7 +1,4 @@
 
-(use rfc.sha1)
-(use util.digest)
-(use gauche.uvector)
 (use file.util)
 (use rfc.json)
 (use gauche.test)

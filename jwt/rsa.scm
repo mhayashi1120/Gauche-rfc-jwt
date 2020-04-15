@@ -10,6 +10,7 @@
   (use jwk.ref)
   (export
    <rsa-private> <rsa-public>
+   read-jwk-private read-jwk-public
 
    rsa-hasher decode-rsa rsa-sha)
   )
@@ -34,6 +35,16 @@
    (N :init-keyword :N)
    (D :init-keyword :D :getter rsa-exponent)
    ))
+
+(define (read-jwk-private json-node)
+  (make <rsa-private>
+    :N (bignum-ref json-node "n")
+    :D (bignum-ref json-node "d")))
+
+(define (read-jwk-public json-node)
+  (make <rsa-public>
+    :N (bignum-ref json-node "n")
+    :E (bignum-ref json-node "e")))
 
 (define (compute-keysize N)
   (ceiling->exact (log (+ N 1) 256)))
