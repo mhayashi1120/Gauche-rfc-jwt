@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+
+# TODO Before invoke the command, set RUBYLIB environment variable to ruby-jwt lib
+
+require 'jwt'
+require 'jwt/jwk'
+
+keyFile = '/home/masa/src/github/ruby-jwt/spec/fixtures/certs/ec256-private.pem'
+
+privateKey = OpenSSL::PKey.read File.read(keyFile)
+
+JWT.encode({"alg" => "RS256"}, jwk, "RS256", {"iss"=>"joe", "exp"=>1300819380,"http://example.com/is_root"=>true});
+
+JWT.decode( sign, publicKey, true, algorithm: "RS256")
+
+# TODO
+# Check any algorithm
+# Encode accept header and payload from stdin
+# Decode accept one argument that is JWT string

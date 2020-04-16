@@ -15,6 +15,11 @@
        (list-builtin-curves)
        (^ [_ result] (pair? result)))
 
+;; TODO Temporary debug
+(use jwk.ref)
+(define (stringify s)
+  (base64-urlencode s))
+
 (let* ([jwk-key (read-json "tests/rfc7515-a-3-jwkkey.json")]
        [header (read-json "tests/rfc7515-a-3-header.json")]
        ;; RFC sample contains newline and some spaces.
@@ -25,8 +30,49 @@
 
   (let1 signature (ecdsa-sign "ES256" signingInput privKey)
     (let* ([pubKey (read-jwk-public jwk-key)])
-      (test* "Verify signature" #t
+      (test* #"Verify rfc example signature ~(base64-urlencode signature)" #t
              (ecdsa-verify? "ES256" signingInput signature pubKey)))))
+
+;; (format "~x" 69468354083072271516004368963394748123208421960310077415846938412628136426447)
+
+;; Import from ruby-jwt (https://github.com/jwt/ruby-jwt)
+
+;; 1. in the spec/fixtures/certs/:
+;; openssl ec -text -in ec256-private.pem
+;; openssl ec -text -in ec384-private.pem
+;; openssl ec -text -in ec512-private.pem
+
+;; 1-1-1. "pub:" section strip first 0x04 https://tools.ietf.org/html/rfc5480#section-2.2
+;; 1-1-2. split the hex sequence to X and Y (just half of it)
+;; 1-2. "priv:" section is D parameter.
+;; 2. Generate JWK key.
+;; 2-1. "kty" -> "EC" "crv" -> P-256 / P-384 / P-521
+;; 2-2. "d", "x", "y" -> above
+;; Above process is implemented in tests/import-pem
+
+(let* ([jwk-key (read-json "tests/ruby-spec-certs-ec256-private.json")]
+       [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
+       [privKey (read-jwk-private jwk-key)])
+  (let1 signature (ecdsa-sign "ES256" signingInput privKey)
+    (let* ([pubKey (read-jwk-public jwk-key)])
+      (test* #"Verify ruby-cert ec256 signature ~(base64-urlencode signature)" #t
+             (ecdsa-verify? "ES256" signingInput signature pubKey)))))
+
+(let* ([jwk-key (read-json "tests/ruby-spec-certs-ec384-private.json")]
+       [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
+       [privKey (read-jwk-private jwk-key)])
+  (let1 signature (ecdsa-sign "ES384" signingInput privKey)
+    (let* ([pubKey (read-jwk-public jwk-key)])
+      (test* #"Verify ruby-cert ec384 signature ~(base64-urlencode signature)" #t
+             (ecdsa-verify? "ES384" signingInput signature pubKey)))))
+
+(let* ([jwk-key (read-json "tests/ruby-spec-certs-ec512-private.json")]
+       [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
+       [privKey (read-jwk-private jwk-key)])
+  (let1 signature (ecdsa-sign "ES512" signingInput privKey)
+    (let* ([pubKey (read-jwk-public jwk-key)])
+      (test* #"Verify ruby-cert ec512 signature ~(base64-urlencode signature)" #t
+             (ecdsa-verify? "ES512" signingInput signature pubKey)))))
 
 ;; If you don't want `gosh' to exit with nonzero status even if
 ;; the test fails, pass #f to :exit-on-failure.

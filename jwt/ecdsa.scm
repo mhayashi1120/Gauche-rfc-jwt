@@ -22,17 +22,20 @@
 ;; Loads extension (To use Openssl libssl)
 (dynamic-load "jwtec")
 
-(define-class <ecdsa-private-key> ()
+(define-class <ecdsa-key> ()
   (
    (curve-name :init-keyword :curve-name)
    (hasher :init-keyword :hasher)
+   (sign-size :init-keyword :sign-size)
+   ))
+
+(define-class <ecdsa-private-key> (<ecdsa-key>)
+  (
    (D :init-keyword :D)
    ))
 
-(define-class <ecdsa-public-key> ()
+(define-class <ecdsa-public-key> (<ecdsa-key>)
   (
-   (curve-name :init-keyword :curve-name)
-   (hasher :init-keyword :hasher)
    (X :init-keyword :X)
    (Y :init-keyword :Y)
    ))
@@ -52,27 +55,29 @@
   (if-let1 crv (assoc-ref jwk-node "crv")
     (match crv
      ["P-256"
-      (values <sha256> crv)]
+      (values <sha256> crv 32)]
      ["P-384"
-      (values <sha384> crv)]
+      (values <sha384> crv 48)]
      ["P-521"
-      (values <sha512> crv)]
+      (values <sha512> crv 66)]
      [else
       (errorf "CurveType ~a not supported" crv)])
     (error "CurveType `crv` not detected.")))
 
 (define (read-jwk-private jwk-node)
-  (receive (hasher curve-type) (read-key-parameters jwk-node)
+  (receive (hasher curve-type size) (read-key-parameters jwk-node)
     (make <ecdsa-private-key>
       :curve-name curve-type
       :hasher hasher
+      :sign-size size
       :D (bignum-ref jwk-node "d"))))
 
 (define (read-jwk-public jwk-node)
-  (receive (hasher curve-type) (read-key-parameters jwk-node)
+  (receive (hasher curve-type size) (read-key-parameters jwk-node)
     (make <ecdsa-public-key>
       :curve-name curve-type
       :hasher hasher
+      :sign-size size
       :X (bignum-ref jwk-node "x")
       :Y (bignum-ref jwk-node "y"))))
 
@@ -97,9 +102,23 @@
                  digest/bin r s
                  x/bin y/bin))))
 
+(define (maybe-fill size src)
+  (let1 vlen (u8vector-length src)
+    (cond
+     [(< size vlen)
+      (error "Assert")]
+     [(= vlen size)
+      src]
+     [else
+      (rlet1 dst (make-u8vector size 0)
+        (let* ([dstart (- size vlen)])
+          (u8vector-copy! dst dstart src)))])))
+
 (define (ecdsa-sign algorithm signing-input private-key)
   (let* ([digest (digest-string (~ private-key'hasher) signing-input)]
          [digest/bin (string->u8vector digest)]
          [d/bin (bignum->u8vector (~ private-key'D))])
-    (receive (r s) (do-sign (~ private-key 'curve-name) digest/bin d/bin)
-      (u8vector->string (u8vector-concatenate (list r s))))))
+    (receive (r s) (do-sign (~ private-key'curve-name) digest/bin d/bin)
+      (let ([R (maybe-fill (~ private-key'sign-size) r)]
+            [S (maybe-fill (~ private-key'sign-size) s)])
+      (u8vector->string (u8vector-concatenate (list R S)))))))

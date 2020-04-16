@@ -1,0 +1,13 @@
+ecdsa algorithm is correctly working with other library
+test ecdsa encode
+algorithm and esdsa curve is mismatched
+no need SCM_NEW_ARRAY free?
+
+consider other scenario
+1. transfer JWT token (unknown encoding yet).
+2. decode token (reveal algorithm)
+3. read key if need (RSA, ECDSA has each key)
+4. verify token by above key
+
+
+read-jwk-private ->  read-rsa-private read-ecdsa-private ...

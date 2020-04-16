@@ -78,6 +78,16 @@ BIGNUM * ScmUVectorToBignum(const ScmUVector * v)
     return bn;
 }
 
+void printArray(const char * tag, char * array, int size) {
+    printf("%s (%04d): ", tag, size);
+    for (int i = 0; i < size; i++)
+    {
+	printf("%02hhx", *(array + i));
+    }
+    printf("\n");
+    fflush(stdout);
+}
+
 ScmObj ECSignatureToVectors(const ECDSA_SIG * signature)
 {
     BIGNUM * r = NULL, * s = NULL;
@@ -85,11 +95,14 @@ ScmObj ECSignatureToVectors(const ECDSA_SIG * signature)
     ECDSA_SIG_get0(signature, (const BIGNUM**)&r, (const BIGNUM**)&s);
     
     /* TODO scm_new or any? */
-    char * R = SCM_NEW_ARRAY(char, 2048);
-    char * S = SCM_NEW_ARRAY(char, 2048);
+    char * R = SCM_NEW_ATOMIC_ARRAY(char, 2048);
+    char * S = SCM_NEW_ATOMIC_ARRAY(char, 2048);
 
     int sizeR = BN_bn2bin(r, R);
     int sizeS = BN_bn2bin(s, S);
+
+    printArray("R", R, sizeR);
+    printArray("S", S, sizeS);
 
     ScmObj scm_r = Scm_MakeUVector(SCM_CLASS_U8VECTOR, sizeR, R);
     ScmObj scm_s = Scm_MakeUVector(SCM_CLASS_U8VECTOR, sizeS, S);
@@ -199,8 +212,8 @@ ScmObj doSign(ScmString * curveType, const ScmUVector * DGST, const ScmUVector *
 	goto exit;
     }
 
-    EC_KEY_set_asn1_flag(privKey, OPENSSL_EC_NAMED_CURVE);
-    EC_KEY_set_conv_form(privKey, POINT_CONVERSION_UNCOMPRESSED);
+    /* EC_KEY_set_asn1_flag(privKey, OPENSSL_EC_NAMED_CURVE); */
+    /* EC_KEY_set_conv_form(privKey, POINT_CONVERSION_UNCOMPRESSED); */
 
     prv = ScmUVectorToBignum(PRV);
 
@@ -218,6 +231,11 @@ ScmObj doSign(ScmString * curveType, const ScmUVector * DGST, const ScmUVector *
 	errorMsg = "Failed to sign by private key";
 	goto exit;
     }
+
+    /* TODO test code */
+const int verifyResult = ECDSA_do_verify(dgst, dgstlen, signature, privKey);
+printf("verifyResult: %d\n", verifyResult);
+fflush(stdout);
 
     ScmObj result = ECSignatureToVectors(signature);
 
