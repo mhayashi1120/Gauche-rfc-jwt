@@ -40,7 +40,7 @@
        [header1 (construct-jwt-header :alg "none")]
        [payload1 (construct-jwt-payload)]
        [token (jwt-encode header1 payload1 secret)])
-  (receive (header payload) (jwt-decode token secret)
+  (receive (header payload) (jwt-decode token secret :verify-signature? #f)
     (test* "header1" header1 header)
     (test* "payload1" payload1 payload)
     ))

@@ -20,17 +20,13 @@ static SCM_DEFINE_SUBRX(jwteclib_do_verify__STUB, 6, 0,0, SCM_FALSE,SCM_SUBR_IMM
 static ScmObj jwteclib_list_builtin_curves(ScmObj*, int, void*);
 static SCM_DEFINE_SUBRX(jwteclib_list_builtin_curves__STUB, 0, 0,0, SCM_FALSE,SCM_SUBR_IMMEDIATE_ARG, jwteclib_list_builtin_curves, NULL, NULL);
 
-
-static ScmObj jwteclib_test_pass_arg(ScmObj*, int, void*);
-static SCM_DEFINE_SUBRX(jwteclib_test_pass_arg__STUB, 2, 0,0, SCM_FALSE,SCM_SUBR_IMMEDIATE_ARG, jwteclib_test_pass_arg, NULL, NULL);
-
 #if defined(__CYGWIN__) || defined(GAUCHE_WINDOWS)
 #define SCM_CGEN_CONST /*empty*/
 #else
 #define SCM_CGEN_CONST const
 #endif
 static SCM_CGEN_CONST struct scm__scRec {
-  ScmString d1698[15];
+  ScmString d1698[13];
 } scm__sc SCM_UNUSED = {
   {   /* ScmString d1698 */
       SCM_STRING_CONST_INITIALIZER("do-sign", 7, 7),
@@ -46,12 +42,10 @@ static SCM_CGEN_CONST struct scm__scRec {
       SCM_STRING_CONST_INITIALIZER("x", 1, 1),
       SCM_STRING_CONST_INITIALIZER("y", 1, 1),
       SCM_STRING_CONST_INITIALIZER("list-builtin-curves", 19, 19),
-      SCM_STRING_CONST_INITIALIZER("test-pass-arg", 13, 13),
-      SCM_STRING_CONST_INITIALIZER("bn", 2, 2),
   },
 };
 static struct scm__rcRec {
-  ScmObj d1699[72];
+  ScmObj d1699[57];
 } scm__rc SCM_UNUSED = {
   {   /* ScmObj d1699 */
     SCM_UNBOUND,
@@ -102,28 +96,13 @@ static struct scm__rcRec {
     SCM_NIL,
     SCM_UNBOUND,
     SCM_UNBOUND,
-    SCM_MAKE_INT(19U),
+    SCM_MAKE_INT(22U),
     SCM_NIL,
     SCM_OBJ(&scm__sc.d1698[5]),
     SCM_OBJ(&scm__rc.d1699[48]),
     SCM_UNDEFINED,
     SCM_OBJ(&scm__rc.d1699[50]),
     SCM_OBJ(&scm__rc.d1699[52]),
-    SCM_NIL,
-    SCM_UNBOUND,
-    SCM_UNBOUND,
-    SCM_UNBOUND,
-    SCM_UNDEFINED,
-    SCM_NIL,
-    SCM_UNDEFINED,
-    SCM_OBJ(&scm__rc.d1699[59]),
-    SCM_MAKE_INT(22U),
-    SCM_NIL,
-    SCM_OBJ(&scm__sc.d1698[5]),
-    SCM_OBJ(&scm__rc.d1699[63]),
-    SCM_UNDEFINED,
-    SCM_OBJ(&scm__rc.d1699[65]),
-    SCM_OBJ(&scm__rc.d1699[67]),
     SCM_NIL,
     SCM_UNBOUND,
   },
@@ -156,7 +135,7 @@ ScmString* SCM_RESULT;
 
 #line 11 "./jwteclib.stub"
 {SCM_RESULT=(
-SCM_STRING(signWithKey(Scm_GetStringConst(curve_type),body,d)));goto SCM_STUB_RETURN;}
+SCM_STRING(doSign(curve_type,body,d)));goto SCM_STUB_RETURN;}
 goto SCM_STUB_RETURN;
 SCM_STUB_RETURN:
 SCM_RETURN(SCM_OBJ_SAFE(SCM_RESULT));
@@ -205,8 +184,8 @@ static ScmObj jwteclib_do_verify(ScmObj *SCM_FP SCM_UNUSED, int SCM_ARGCNT SCM_U
 {
 ScmObj SCM_RESULT;
 
-#line 15 "./jwteclib.stub"
-{SCM_RESULT=(verifyByKey(Scm_GetStringConst(curve_type),dgst,r,s,x,y));goto SCM_STUB_RETURN;}
+#line 18 "./jwteclib.stub"
+{SCM_RESULT=(doVerify(curve_type,dgst,r,s,x,y));goto SCM_STUB_RETURN;}
 goto SCM_STUB_RETURN;
 SCM_STUB_RETURN:
 SCM_RETURN(SCM_OBJ_SAFE(SCM_RESULT));
@@ -221,47 +200,11 @@ static ScmObj jwteclib_list_builtin_curves(ScmObj *SCM_FP SCM_UNUSED, int SCM_AR
 {
 ScmObj SCM_RESULT;
 
-#line 20 "./jwteclib.stub"
+#line 23 "./jwteclib.stub"
 {SCM_RESULT=(getBuiltinCurves());goto SCM_STUB_RETURN;}
 goto SCM_STUB_RETURN;
 SCM_STUB_RETURN:
 SCM_RETURN(SCM_OBJ_SAFE(SCM_RESULT));
-}
-  }
-}
-
-static ScmObj jwteclib_test_pass_arg(ScmObj *SCM_FP SCM_UNUSED, int SCM_ARGCNT SCM_UNUSED, void *data_ SCM_UNUSED)
-{
-  ScmObj s_scm;
-  ScmString* s;
-  ScmObj bn_scm;
-  ScmUVector* bn;
-  ScmObj SCM_SUBRARGS[2];
-  SCM_ENTER_SUBR("test-pass-arg");
-  for (int SCM_i=0; SCM_i<2; SCM_i++) {
-    SCM_SUBRARGS[SCM_i] = SCM_ARGREF(SCM_i);
-  }
-  s_scm = SCM_SUBRARGS[0];
-  if (!SCM_STRINGP(s_scm)) Scm_Error("string required, but got %S", s_scm);
-  s = SCM_STRING(s_scm);
-  bn_scm = SCM_SUBRARGS[1];
-  if (!SCM_U8VECTORP(bn_scm)) Scm_Error("u8vector required, but got %S", bn_scm);
-  bn = SCM_U8VECTOR(bn_scm);
-  {
-{
-ScmPair* SCM_RESULT;
-
-#line 23 "./jwteclib.stub"
-{uint8_t * cp=SCM_UVECTOR_ELEMENTS(bn);int size=
-#line 25 "./jwteclib.stub"
-Scm_UVectorSizeInBytes(bn);
-{SCM_RESULT=(SCM_PAIR(SCM_LIST3(
-SCM_OBJ(s),
-Scm_MakeU8VectorFromArray(size,cp),
-Scm_MakeInteger(size))));goto SCM_STUB_RETURN;}}
-goto SCM_STUB_RETURN;
-SCM_STUB_RETURN:
-SCM_RETURN(SCM_OBJ(SCM_RESULT));
 }
   }
 }
@@ -301,12 +244,4 @@ void Scm_Init_jwteclib(ScmModule *mod SCM_UNUSED){
   scm__rc.d1699[56] = Scm_MakeExtendedPair(scm__rc.d1699[47], SCM_NIL, SCM_OBJ(&scm__rc.d1699[54]));
   Scm_MakeBinding(SCM_MODULE(mod), SCM_SYMBOL(SCM_INTERN("list-builtin-curves")), SCM_OBJ(&jwteclib_list_builtin_curves__STUB), 0);
   jwteclib_list_builtin_curves__STUB.common.info = scm__rc.d1699[56];
-  scm__rc.d1699[57] = Scm_MakeSymbol(SCM_STRING(SCM_OBJ(&scm__sc.d1698[13])),TRUE); /* test-pass-arg */
-  scm__rc.d1699[58] = Scm_MakeSymbol(SCM_STRING(SCM_OBJ(&scm__sc.d1698[14])),TRUE); /* bn */
-  SCM_SET_CAR(SCM_OBJ(&scm__rc.d1699[59]), scm__rc.d1699[58]);
-  SCM_SET_CAR(SCM_OBJ(&scm__rc.d1699[61]), scm__rc.d1699[23]);
-  SCM_SET_CAR(SCM_OBJ(&scm__rc.d1699[67]), scm__rc.d1699[10]);
-  scm__rc.d1699[71] = Scm_MakeExtendedPair(scm__rc.d1699[57], SCM_OBJ(&scm__rc.d1699[61]), SCM_OBJ(&scm__rc.d1699[69]));
-  Scm_MakeBinding(SCM_MODULE(mod), SCM_SYMBOL(SCM_INTERN("test-pass-arg")), SCM_OBJ(&jwteclib_test_pass_arg__STUB), 0);
-  jwteclib_test_pass_arg__STUB.common.info = scm__rc.d1699[71];
 }

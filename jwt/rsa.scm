@@ -12,7 +12,7 @@
    <rsa-private> <rsa-public>
    read-jwk-private read-jwk-public
 
-   rsa-hasher decode-rsa rsa-sha)
+   rsa-hasher rsa-verify? rsa-sign)
   )
 (select-module jwt.rsa)
 
@@ -36,15 +36,15 @@
    (D :init-keyword :D :getter rsa-exponent)
    ))
 
-(define (read-jwk-private json-node)
+(define (read-jwk-private jwk-node)
   (make <rsa-private>
-    :N (bignum-ref json-node "n")
-    :D (bignum-ref json-node "d")))
+    :N (bignum-ref jwk-node "n")
+    :D (bignum-ref jwk-node "d")))
 
-(define (read-jwk-public json-node)
+(define (read-jwk-public jwk-node)
   (make <rsa-public>
-    :N (bignum-ref json-node "n")
-    :E (bignum-ref json-node "e")))
+    :N (bignum-ref jwk-node "n")
+    :E (bignum-ref jwk-node "e")))
 
 (define (compute-keysize N)
   (ceiling->exact (log (+ N 1) 256)))
@@ -94,30 +94,28 @@
 ;;; RSA
 ;;;
 
-(define (rsa-sign M key)
-  (let1 C (expt-mod M (rsa-exponent key) (~ key'N))
-    C))
+(define (rsa-encrypt M key)
+  (expt-mod M (rsa-exponent key) (~ key'N)))
 
-(define (rsa-verify C key hasher)
-  (let1 M1 (expt-mod C (rsa-exponent key) (~ key'N))
-    M1))
+(define (rsa-decrypt C key hasher)
+  (expt-mod C (rsa-exponent key) (~ key'N)))
 
 ;;;
-;;; Encode / Decode
+;;; Sign / Verify
 ;;;
 
-(define (decode-rsa algorithm key header/b64 payload/b64 sign)
+(define (rsa-verify? algorithm key header/b64 payload/b64 sign)
   (let* ([hasher (rsa-hasher algorithm)]
          [verify-target #"~|header/b64|.~|payload/b64|"]
          [M0 (pkcs1-encode hasher verify-target (compute-keysize (~ key'N)))]
          [C (string->bignum sign)]
-         [M1 (rsa-verify C key hasher)])
-    (values M0 M1)))
+         [M1 (rsa-decrypt C key hasher)])
+    (equal? M0 M1)))
 
-;; TODO rename -> encode-rsa
-(define (rsa-sha s key hasher)
-  (let* ([M (pkcs1-encode hasher s (compute-keysize (~ key'N)))]
-         [C (rsa-sign M key)]
+(define (rsa-sign algorithm s key)
+  (let* ([hasher (rsa-hasher algorithm)]
+         [M (pkcs1-encode hasher s (compute-keysize (~ key'N)))]
+         [C (rsa-encrypt M key)]
          [S (bignum->string C)])
     S))
 

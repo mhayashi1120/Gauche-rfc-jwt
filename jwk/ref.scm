@@ -1,3 +1,7 @@
+;;;
+;;; Part of JWK (RFC7517)
+;;;
+
 (define-module jwk.ref
   (use srfi-13)
   (use rfc.base64)
@@ -7,7 +11,18 @@
 (select-module jwk.ref)
 
 ;;;
-;;; OctetString <-> Gauche integer
+;;; Base64
+;;;
+
+(define (base64-urlencode s)
+  (string-trim-right (base64-encode-string s :line-width #f :url-safe #t) #[=]))
+
+(define (base64-urldecode s)
+  ;; Decoder simply ignore trailing "="
+  (base64-decode-string s :url-safe #t))
+
+;;;
+;;; OctetString <-> Gauche type
 ;;;
 
 (define (u8vector->bignum v :optional (be? #f))
@@ -42,11 +57,16 @@
   (let1 b (base64-urldecode s)
     (string->bignum b)))
 
-(define (bignum-ref key item)
-  (b64->bignum (assoc-ref key item)))
+;;;
+;;; Utility function
+;;;
 
-(define (base64-urlencode s)
-  (string-trim-right (base64-encode-string s :line-width #f :url-safe #t) #[=]))
+(define (bignum-ref item key :optional (option? #f))
+  (cond
+   [(assoc-ref item key) =>
+    (^ [b64]
+      (b64->bignum b64))]
+   [(not option?)
+    (error "Not found a key ~a" key)]
+   [else #f]))
 
-(define (base64-urldecode s)
-  (base64-decode-string s :url-safe #t))

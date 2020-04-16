@@ -30,11 +30,11 @@ SCM_DECL_BEGIN
  * Replace it for your declarations.
  */
 
-extern ScmObj signWithKey(const char * curveType, const ScmUVector *DGST, const ScmUVector *PRV);
+extern ScmObj doSign(ScmString * curveType, const ScmUVector * DGST, const ScmUVector * PRV);
 
-extern ScmObj verifyByKey(const char *curveType, const ScmUVector *DGST,
-						  const ScmUVector *R, const ScmUVector *S,
-						  const ScmUVector *X, const ScmUVector *Y);
+extern ScmObj doVerify(ScmString * curveType, const ScmUVector *DGST,
+		const ScmUVector *R, const ScmUVector *S,
+		const ScmUVector *X, const ScmUVector *Y);
 
 extern ScmObj getBuiltinCurves();
 

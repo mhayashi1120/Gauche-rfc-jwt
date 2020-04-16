@@ -4,7 +4,7 @@
 
 (define-gauche-package "Gauche-jwt"
   ;; 
-  :version "0.0.1"
+  :version "0.0.2"
 
   ;; Description of the package.  The first line is used as a short
   ;; summary.

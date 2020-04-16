@@ -9,25 +9,18 @@
 
 (define-cproc do-sign (curve-type::<string> body::<u8vector> d::<u8vector>) :: <string>
   (return
-   (SCM_STRING (signWithKey (Scm_GetStringConst curve-type) body d))))
+   (SCM_STRING (doSign curve-type body d))))
 
-(define-cproc do-verify (curve-type::<string> dgst::<u8vector> r::<u8vector> s::<u8vector> x::<u8vector> y::<u8vector>)
-  (return (verifyByKey (Scm_GetStringConst curve-type) dgst r s x y)))
+(define-cproc do-verify (curve-type::<string>
+                         dgst::<u8vector>
+                         r::<u8vector> s::<u8vector>
+                         x::<u8vector> y::<u8vector>)
+  (return (doVerify curve-type dgst r s x y)))
 
 ;; list of ITEM
 ;; ITEM : #(nid nist-name ln sn comment)
 (define-cproc list-builtin-curves ()
   (return (getBuiltinCurves)))
-
-(define-cproc test-pass-arg (s::<string> bn::<u8vector>) :: <pair>
-  (let* ([cp :: (uint8_t *) (SCM_UVECTOR_ELEMENTS bn)]
-         ;; [bn-size (SCM_UVECTOR_SIZE bn)]
-         [size :: int (Scm_UVectorSizeInBytes bn)])
-    (return (SCM_PAIR (list
-                       (SCM_OBJ s)
-                       (Scm_MakeU8VectorFromArray size cp)
-                       (Scm_MakeInteger size))))))
-
 
 ;; Local variables:
 ;; mode: scheme

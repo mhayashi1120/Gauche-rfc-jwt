@@ -19,17 +19,15 @@
   )
 (select-module jwt)
 
-(autoload rfc.hmac hmac-digest)
+;; This module just contains hmac digest algorithm ("HS256", "HS384", "HS512", and "none")
+;; Other algorithm (`Recommended`, `Optionali`) dynamically loaded after detect
+;; algorithm from JWT header.
 
 ;; RSA algorithm is just `recommended`
-(autoload jwt.rsa decode-rsa rsa-sha rsa-hasher)
+(autoload jwt.rsa rsa-sign rsa-verify?)
 
-;;;
-;;; Basic
-;;;
-
-(define (hmac-sha s key hasher)
-  (hmac-digest-string s :key key :hasher hasher))
+;; ECDSA algorithm is marked as `recommended+`
+(autoload jwt.ecdsa ecdsa-sign ecdsa-verify?)
 
 ;;;
 ;;; Decoder / Encoder
@@ -40,21 +38,24 @@
    [(string? x) x]
    [(pair? x) (construct-json-string x)]))
 
-(define (encode-header header)
+(define (encode-part header)
   ($ base64-urlencode $ ensure-json-construction header))
 
-(define (decode-header header/b64)
+(define (decode-part header/b64)
   ($ parse-json-string $ base64-urldecode header/b64))
 
-(define (encode-payload payload)
-  ($ base64-urlencode $ ensure-json-construction payload))
-
-(define (decode-payload payload/b64)
-  ($ parse-json-string $ base64-urldecode payload/b64))
-
 ;;;
-;;; Sign
+;;; HMAC
 ;;;
+
+(define (hmac-sign s key algorithm)
+  (let1 hasher (hmac-hasher algorithm)
+    (hmac-digest-string s :key key :hasher hasher)))
+
+(define (hmac-verify? algorithm key header/b64 payload/b64 sign)
+  (let* ([verify-target #"~|header/b64|.~|payload/b64|"]
+         [verifier (hmac-sign verify-target key algorithm)])
+    (equal? sign verifier)))
 
 (define (hmac-hasher algorithm)
   (match algorithm
@@ -63,29 +64,41 @@
     ["HS512" <sha512>]
     [else #f]))
 
+;;;
+;;; none
+;;;
+
+(define (none-sign . _)
+  "")
+
+;;;
+;;; Sign
+;;;
+
 (define (signature algorithm target key)
   (match algorithm
-    ;; FIXME redundant pattern?
-    [(and (? hmac-hasher)
-          (= hmac-hasher hasher))
-     (hmac-sha target key hasher)]
+    [(or "HS256" "HS384" "HS512")
+     (hmac-sign target key algorithm)]
     ["none"
-     ""]
+     (none-sign)]
     ;; These algorithm just `recommended`
-    [(and (? rsa-hasher)
-          (= rsa-hasher hasher))
-     (rsa-sha target key hasher)]
+    [(or "RS256" "RS384" "RS512")
+     (rsa-sign algorithm target key)]
+    [(or "ES256" "ES384" "ES512")
+     (ecdsa-sign algorithm target key)]
     [else
      (errorf "Not yet supported algorithm ~a" algorithm)]))
 
-;;;
-;;; Verifier
-;;;
-
-(define (decode-hmac algorithm key header/b64 payload/b64 sign)
-  (let* ([verify-target #"~|header/b64|.~|payload/b64|"]
-         [verifier (signature algorithm verify-target key)])
-    (values sign verifier)))
+(define (verify? algorithm key header/b64 payload/b64 sign)
+  (match algorithm
+    [(or "HS256" "HS384" "HS512")
+     (hmac-verify? algorithm key header/b64 payload/b64 sign)]
+    ["none"
+     #f]
+    [(or "RS256" "RS384" "RS512")
+     (rsa-verify? algorithm key header/b64 payload/b64 sign)]
+    [(or "ES256" "ES384" "ES512")
+     (ecdsa-verify? algorithm key header/b64 payload/b64 sign)]))
 
 ;;;
 ;;; Construct json
@@ -130,7 +143,6 @@
 ;;; Encode / Decode (verify)
 ;;;
 
-
 ;; HEADER: json-object / STRING
 ;; PAYLOAD: json-object / STRING
 ;; KEY: Hold key depend on algorithm
@@ -144,8 +156,8 @@
   ;;        "RS256" "RS384" "RS512"
   (let* ([header/json (as-json header)]
          [algorithm (assoc-ref header/json "alg")]
-         [header/b64 (encode-header header)]
-         [payload/b64 (encode-payload payload)]
+         [header/b64 (encode-part header)]
+         [payload/b64 (encode-part payload)]
          [sign-target #"~|header/b64|.~|payload/b64|"]
          [sign (signature algorithm sign-target key)]
          [sign/b64 (base64-urlencode sign)])
@@ -155,24 +167,17 @@
   (match (string-split token ".")
     [(header/b64 payload/b64 sign/b64)
      ;;TODO algorithm is not supplied
-     (let* ([header (decode-header header/b64)]
+     (let* ([header (decode-part header/b64)]
             [algorithm (assoc-ref header "alg")]
-            [payload (decode-payload payload/b64)]
+            [payload (decode-part payload/b64)]
             [sign (base64-urldecode sign/b64)])
        (when verify-signature?
-         (receive (signature verifier)
-             (match algorithm
-               [(or "HS256" "HS384" "HS512")
-                (decode-hmac algorithm key header/b64 payload/b64 sign)]
-               [(or "RS256" "RS384" "RS512")
-                (decode-rsa algorithm key header/b64 payload/b64 sign)]
-               ["none"
-                ;; TODO reconsider
-                (values #f #f)])
-           (unless (equal? signature verifier)
-             (let1 verifier/b64 (base64-urlencode verifier)
-               (errorf "Not a valid signature expected ~a but ~a"
-                       verifier/b64 sign/b64)))))
+         (cond
+          [(not algorithm)
+           (error "Algorithm not detected")]
+          [(verify? algorithm key header/b64 payload/b64 sign)]
+          [else
+           (errorf "Not a valid signature")]))
        ;; TODO Check type (some of field has number or not)
        (values header payload))]
     [else
