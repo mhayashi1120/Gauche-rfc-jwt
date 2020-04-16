@@ -83,9 +83,8 @@
     (values (->u8vector signature 0 pos)
             (->u8vector signature pos))))
 
-(define (ecdsa-verify? algorithm public-key header/b64 payload/b64 signature)
-  (let* ([signing-input #"~|header/b64|.~|payload/b64|"]
-         [digest (digest-string (~ public-key'hasher) signing-input)]
+(define (ecdsa-verify? algorithm public-key signing-input signature)
+  (let* ([digest (digest-string (~ public-key'hasher) signing-input)]
          [digest/bin (string->u8vector digest)]
          [x/bin (bignum->u8vector (~ public-key'X))]
          [y/bin (bignum->u8vector (~ public-key'Y))])

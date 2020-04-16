@@ -48,13 +48,12 @@
 ;;; HMAC
 ;;;
 
-(define (hmac-sign s key algorithm)
-  (let1 hasher (hmac-hasher algorithm)
+(define (hmac-sign algorithm s key)
+  (let* ([hasher (hmac-hasher algorithm)])
     (hmac-digest-string s :key key :hasher hasher)))
 
-(define (hmac-verify? algorithm key header/b64 payload/b64 sign)
-  (let* ([verify-target #"~|header/b64|.~|payload/b64|"]
-         [verifier (hmac-sign verify-target key algorithm)])
+(define (hmac-verify? algorithm key signing-input sign)
+  (let* ([verifier (hmac-sign algorithm signing-input key)])
     (equal? sign verifier)))
 
 (define (hmac-hasher algorithm)
@@ -78,7 +77,7 @@
 (define (signature algorithm target key)
   (match algorithm
     [(or "HS256" "HS384" "HS512")
-     (hmac-sign target key algorithm)]
+     (hmac-sign algorithm target key)]
     ["none"
      (none-sign)]
     ;; These algorithm just `recommended`
@@ -90,15 +89,16 @@
      (errorf "Not yet supported algorithm ~a" algorithm)]))
 
 (define (verify? algorithm key header/b64 payload/b64 sign)
-  (match algorithm
-    [(or "HS256" "HS384" "HS512")
-     (hmac-verify? algorithm key header/b64 payload/b64 sign)]
-    ["none"
-     #f]
-    [(or "RS256" "RS384" "RS512")
-     (rsa-verify? algorithm key header/b64 payload/b64 sign)]
-    [(or "ES256" "ES384" "ES512")
-     (ecdsa-verify? algorithm key header/b64 payload/b64 sign)]))
+  (let* ([signing-input #"~|header/b64|.~|payload/b64|"])
+    (match algorithm
+      [(or "HS256" "HS384" "HS512")
+       (hmac-verify? algorithm key signing-input sign)]
+      ["none"
+       #f]
+      [(or "RS256" "RS384" "RS512")
+       (rsa-verify? algorithm key signing-input sign)]
+      [(or "ES256" "ES384" "ES512")
+       (ecdsa-verify? algorithm key signing-input sign)])))
 
 ;;;
 ;;; Construct json

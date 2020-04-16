@@ -25,9 +25,8 @@
 
   (let1 signature (ecdsa-sign "ES256" signingInput privKey)
     (let* ([pubKey (read-jwk-public jwk-key)])
-      (match-let1 (header payload) (string-split signingInput ".")
-        (test* "Verify signature" #t
-               (ecdsa-verify? "ES256" pubKey header payload signature))))))
+      (test* "Verify signature" #t
+             (ecdsa-verify? "ES256" pubKey signingInput signature)))))
 
 ;; If you don't want `gosh' to exit with nonzero status even if
 ;; the test fails, pass #f to :exit-on-failure.

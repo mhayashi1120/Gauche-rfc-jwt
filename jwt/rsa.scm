@@ -104,10 +104,9 @@
 ;;; Sign / Verify
 ;;;
 
-(define (rsa-verify? algorithm key header/b64 payload/b64 sign)
+(define (rsa-verify? algorithm key signing-input sign)
   (let* ([hasher (rsa-hasher algorithm)]
-         [verify-target #"~|header/b64|.~|payload/b64|"]
-         [M0 (pkcs1-encode hasher verify-target (compute-keysize (~ key'N)))]
+         [M0 (pkcs1-encode hasher signing-input (compute-keysize (~ key'N)))]
          [C (string->bignum sign)]
          [M1 (rsa-decrypt C key hasher)])
     (equal? M0 M1)))
