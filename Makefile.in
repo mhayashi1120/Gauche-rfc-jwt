@@ -48,12 +48,13 @@ GAUCHE_PKGARCHDIR = "$(DESTDIR)@GAUCHE_PKGARCHDIR@"
 
 jwtec_SRCS = $(srcdir)/jwtec.c $(srcdir)/jwteclib.stub
 
+# MY_DEBUGGING = --keep-c-files
+
 all : $(TARGET)
 
-# TODO remove --keep-c-files after debug
 jwtec.$(SOEXT): $(jwtec_SRCS) jwtec.h
 	$(GAUCHE_PACKAGE) compile \
-	  --keep-c-files \
+	  $(MY_DEBUGGING) \
 	  --ldflags=$(LDFLAGS) \
 	  --libs=$(LIBS) \
 	  --local=$(LOCAL_PATHS) --verbose jwtec $(jwtec_SRCS)

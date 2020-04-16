@@ -15,16 +15,15 @@ RFC7518 (JWA)
 
 HS256 HS384 HS512
 RS256 RS384 RS512
+ES256, ES384, ES512
 none
 
 ## Reference:
 
 https://jwt.io/
 https://github.com/jwt/ruby-jwt
+https://www.jnsa.org/seminar/pki-day/2011/data/02_kanaoka.pdf
 
 ## TODO
 
-ECDSA (ES256, ES384, ES512) Recommended+
-libssl-dev
-/usr/include/openssl/ecdsa.h
 

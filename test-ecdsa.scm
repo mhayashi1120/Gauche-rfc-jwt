@@ -15,11 +15,6 @@
        (list-builtin-curves)
        (^ [_ result] (pair? result)))
 
-;; TODO Temporary debug
-(use jwk.ref)
-(define (stringify s)
-  (base64-urlencode s))
-
 (let* ([jwk-key (read-json "tests/rfc7515-a-3-jwkkey.json")]
        [header (read-json "tests/rfc7515-a-3-header.json")]
        ;; RFC sample contains newline and some spaces.
@@ -32,8 +27,6 @@
     (let* ([pubKey (read-ecdsa-public jwk-key)])
       (test* #"Verify rfc example signature ~(base64-urlencode signature)" #t
              (ecdsa-verify? "ES256" signingInput signature pubKey)))))
-
-;; (format "~x" 69468354083072271516004368963394748123208421960310077415846938412628136426447)
 
 ;; Import from ruby-jwt (https://github.com/jwt/ruby-jwt)
 

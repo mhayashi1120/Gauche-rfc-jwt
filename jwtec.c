@@ -78,21 +78,26 @@ BIGNUM * ScmUVectorToBignum(const ScmUVector * v)
     return bn;
 }
 
+ScmObj readBNToVector(BIGNUM * bn)
+{
+    int numBytes = BN_num_bytes(bn);
+    char * array =  SCM_NEW_ATOMIC_ARRAY(char, numBytes);
+    int size = BN_bn2bin(bn, array);
+
+    /* Some of misunderstanding or not. */
+    SCM_ASSERT(numBytes == size);
+
+    return Scm_MakeUVector(SCM_CLASS_U8VECTOR, size, array);
+}
+
 ScmObj ECSignatureToVectors(const ECDSA_SIG * signature)
 {
     BIGNUM * r = NULL, * s = NULL;
     
     ECDSA_SIG_get0(signature, (const BIGNUM**)&r, (const BIGNUM**)&s);
     
-    /* TODO scm_new or any? */
-    char * R = SCM_NEW_ATOMIC_ARRAY(char, 2048);
-    char * S = SCM_NEW_ATOMIC_ARRAY(char, 2048);
-
-    int sizeR = BN_bn2bin(r, R);
-    int sizeS = BN_bn2bin(s, S);
-
-    ScmObj scm_r = Scm_MakeUVector(SCM_CLASS_U8VECTOR, sizeR, R);
-    ScmObj scm_s = Scm_MakeUVector(SCM_CLASS_U8VECTOR, sizeS, S);
+    ScmObj scm_r = readBNToVector(r);
+    ScmObj scm_s = readBNToVector(s);
 
     ScmObj result = Scm_Values2(scm_r, scm_s);
 
@@ -101,8 +106,8 @@ exit:
     return result;
 }
 
-EC_KEY * ensureECKeyByCurveType(ScmString * curveType) {
-
+EC_KEY * ensureECKeyByCurveType(ScmString * curveType)
+{
     const char * curve_type = Scm_GetStringConst(curveType);
     int nid = EC_curve_nist2nid(curve_type);
 
@@ -183,7 +188,7 @@ exit:
     return result;
 }
 
-/* TODO curveType: accept nist / sn */
+/* curveType: NIST / SN */
 /* Return: R and S signed values as <u8vector>. */
 ScmObj doSign(ScmString * curveType, const ScmUVector * DGST, const ScmUVector * PRV)
 {

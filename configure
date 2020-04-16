@@ -2,9 +2,6 @@
 ;; Configuring Gauche-jwt
 ;; Run ./configure (or gosh ./configure) to generate Makefiles.
 
-;; TODO
-(debug-print-width #f)
-
 (use gauche.mop.singleton)
 (use gauche.configure)
 

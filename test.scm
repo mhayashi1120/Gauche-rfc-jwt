@@ -34,16 +34,31 @@
   (receive (header payload) (jwt-decode token secret)
     (test* "header1" header1 header)
     (test* "payload1" payload1 payload)
-    ))
+    )
+
+  ;; This scenario concern:
+  ;; 1. unknown algorithm yet (e.g. HS256 | ES256 | RS256) cannot decide KEY.
+  ;; 2. KEY as #f and :verify-signature? #f to read header and payload.
+  ;; 3. detect "alg" parameter from header.
+  ;; 4. read correct algorithm KEY.
+  ;; 5. call again `jwt-decode` with above KEY and verify.
+  (receive (header payload) (jwt-decode token #f :verify-signature? #f)
+    (test* "header1 non-verified and no-key" header1 header)
+    (test* "payload1 non-verified and no-key" payload1 payload)
+    )
+  )
 
 (let* ([secret #f]
        [header1 (construct-jwt-header :alg "none")]
        [payload1 (construct-jwt-payload)]
        [token (jwt-encode header1 payload1 secret)])
+  ;; Working when secret is #f and :verify-signature? is off
   (receive (header payload) (jwt-decode token secret :verify-signature? #f)
     (test* "header1" header1 header)
     (test* "payload1" payload1 payload)
-    ))
+
+  (test* "Raise error when none algorithm" (test-error)
+         (jwt-decode token secret))))
 
 (test* "simple verify" #t
        (jwt-verify

@@ -19,9 +19,10 @@
   )
 (select-module jwt)
 
-;; This module just contains hmac digest algorithm ("HS256", "HS384", "HS512", and "none")
+;; This module just contains hmac digest algorithm ("HS256", "HS384", "HS512")
+;;  and "none" . "HS256" and "none" algorithm is required by RFC7519.
 ;; Other algorithm (`Recommended`, `Optionali`) dynamically loaded after detect
-;; from JWT header.
+;; by JWT header.
 
 ;; RSA algorithm is just `recommended`
 (autoload jwt.rsa rsa-sign rsa-verify?)
@@ -174,8 +175,6 @@
      [(string? x) (parse-json-string x)]
      [(pair? x) x]))
 
-  ;; ALGORITHM: "HS256" / "HS384" / "HS512" / "none"
-  ;;        "RS256" "RS384" "RS512"
   (let* ([header/json (as-json header)]
          [algorithm (assoc-ref header/json "alg")]
          [header/b64 (encode-part header)]

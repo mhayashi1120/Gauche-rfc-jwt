@@ -1,7 +1,9 @@
 Check ecdsa algorithm is correctly working with other library (ruby-jwt)
 test ecdsa encode
 When algorithm and esdsa curve is mismatched. Raise error.
-no need SCM_NEW_ARRAY free?
+
+EC_builtin_curve * curves = SCM_NEW_ARRAY(EC_builtin_curve, crv_len);
+need free?
 
 considering other scenario
 1. transfer JWT token (unknown encoding yet).
