@@ -104,17 +104,17 @@
 ;;; Sign / Verify
 ;;;
 
-(define (rsa-verify? algorithm key signing-input sign)
+(define (rsa-verify? algorithm signing-input sign public-key)
   (let* ([hasher (rsa-hasher algorithm)]
-         [M0 (pkcs1-encode hasher signing-input (compute-keysize (~ key'N)))]
+         [M0 (pkcs1-encode hasher signing-input (compute-keysize (~ public-key'N)))]
          [C (string->bignum sign)]
-         [M1 (rsa-decrypt C key hasher)])
+         [M1 (rsa-decrypt C public-key hasher)])
     (equal? M0 M1)))
 
-(define (rsa-sign algorithm s key)
+(define (rsa-sign algorithm s private-key)
   (let* ([hasher (rsa-hasher algorithm)]
-         [M (pkcs1-encode hasher s (compute-keysize (~ key'N)))]
-         [C (rsa-encrypt M key)]
+         [M (pkcs1-encode hasher s (compute-keysize (~ private-key'N)))]
+         [C (rsa-encrypt M private-key)]
          [S (bignum->string C)])
     S))
 

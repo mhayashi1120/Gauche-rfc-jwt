@@ -52,7 +52,7 @@
   (let* ([hasher (hmac-hasher algorithm)])
     (hmac-digest-string s :key key :hasher hasher)))
 
-(define (hmac-verify? algorithm key signing-input sign)
+(define (hmac-verify? algorithm signing-input sign key)
   (let* ([verifier (hmac-sign algorithm signing-input key)])
     (equal? sign verifier)))
 
@@ -92,13 +92,13 @@
   (let* ([signing-input #"~|header/b64|.~|payload/b64|"])
     (match algorithm
       [(or "HS256" "HS384" "HS512")
-       (hmac-verify? algorithm key signing-input sign)]
+       (hmac-verify? algorithm signing-input sign key)]
       ["none"
        #f]
       [(or "RS256" "RS384" "RS512")
-       (rsa-verify? algorithm key signing-input sign)]
+       (rsa-verify? algorithm signing-input sign key)]
       [(or "ES256" "ES384" "ES512")
-       (ecdsa-verify? algorithm key signing-input sign)])))
+       (ecdsa-verify? algorithm signing-input sign key)])))
 
 ;;;
 ;;; Construct json
@@ -166,7 +166,6 @@
 (define (jwt-decode token key :key (verify-signature? #t))
   (match (string-split token ".")
     [(header/b64 payload/b64 sign/b64)
-     ;;TODO algorithm is not supplied
      (let* ([header (decode-part header/b64)]
             [algorithm (assoc-ref header "alg")]
             [payload (decode-part payload/b64)]
@@ -179,6 +178,7 @@
           [else
            (errorf "Not a valid signature")]))
        ;; TODO Check type (some of field has number or not)
+       ;; introduce verify-type? keyword
        (values header payload))]
     [else
      (errorf "Invalid Json Web Token ~a"
