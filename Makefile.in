@@ -60,7 +60,7 @@ jwtec.$(SOEXT): $(jwtec_SRCS) jwtec.h
 
 check : all
 	@rm -f test.log
-	$(GOSH) -I. -I$(srcdir) $(TEST_LIBSSL_DEPENDS) $(srcdir)/test.scm > test.log
+	$(GOSH) -I. -I$(srcdir) $(srcdir)/test.scm $(TEST_LIBSSL_DEPENDS) > test.log
 
 install : all
 	$(INSTALL) -m 444 -T $(GAUCHE_PKGINCDIR) $(HEADERS)

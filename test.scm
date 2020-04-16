@@ -45,6 +45,56 @@
     (test* "payload1" payload1 payload)
     ))
 
+(test* "simple verify" #t
+       (jwt-verify
+        (construct-jwt-header)
+        (construct-jwt-payload)))
+
+(test* "exp verify fail expired" (test-error)
+       (jwt-verify
+        (construct-jwt-header)
+        (construct-jwt-payload
+         :exp 1587100001)
+        :now 1587100001))
+
+(test* "exp verify fail expired2" (test-error)
+       (jwt-verify
+        (construct-jwt-header)
+        (construct-jwt-payload
+         :exp 1587100000)
+        :now 1587100001))
+
+(test* "exp verify succeeded" #t
+       (jwt-verify
+        (construct-jwt-header)
+        (construct-jwt-payload
+         :exp 1587100002)
+        :now 1587100001))
+
+(test* "exp verify succeeded with leeway" #t
+       (jwt-verify
+        (construct-jwt-header)
+        (construct-jwt-payload
+         :exp 1587100002)
+        :now 1587100001
+        :global-leeway 1))
+
+(test* "nbf verify failed" (test-error)
+       (jwt-verify
+        (construct-jwt-header)
+        (construct-jwt-payload
+         :nbf 1587100002)
+        :now 1587100001
+        ))
+
+(test* "nbf verify succeeded" #t
+       (jwt-verify
+        (construct-jwt-header)
+        (construct-jwt-payload
+         :nbf 1587100002)
+        :now 1587100002
+        ))
+
 (test-end :exit-on-failure #t)
 
 (test-start "jwt.rsa")
@@ -67,3 +117,6 @@
 ;; the test fails, pass #f to :exit-on-failure.
 (test-end :exit-on-failure #t)
 
+(let ([optional-tests *argv*])
+  (dolist (test optional-tests)
+    (load test)))

@@ -97,8 +97,6 @@ ScmObj ECSignatureToVectors(const ECDSA_SIG * signature)
     ScmObj result = Scm_Values2(scm_r, scm_s);
 
 exit:
-    if (r != NULL) BN_free(r);
-    if (s != NULL) BN_free(s);
 
     return result;
 }
@@ -156,6 +154,8 @@ ScmObj doVerify(ScmString * curveType, const ScmUVector *DGST,
 	goto exit;
     }
 
+    r = NULL, s = NULL;
+
     const char * dgst = (char*)SCM_UVECTOR_ELEMENTS(DGST);
     const int dgstlen = SCM_UVECTOR_SIZE(DGST);
     const int verifyResult = ECDSA_do_verify(dgst, dgstlen, signature, pubKey);
@@ -172,9 +172,8 @@ exit:
     if (x != NULL) BN_free(x);
     if (y != NULL) BN_free(y);
 
-    /* This is cleared by  ECDSA_SIG_free() */
-    /* if (r != NULL) BN_free(r); */
-    /* if (s != NULL) BN_free(s); */
+    if (r != NULL) BN_free(r);
+    if (s != NULL) BN_free(s);
     if (signature != NULL) ECDSA_SIG_free(signature);
 
     if (errorMsg != NULL) {
@@ -191,6 +190,7 @@ ScmObj doSign(ScmString * curveType, const ScmUVector * DGST, const ScmUVector *
     char * errorMsg = NULL;
     EC_KEY * privKey = NULL;
     BIGNUM * prv = NULL;
+    ECDSA_SIG * signature = NULL;
 
     privKey = ensureECKeyByCurveType(curveType);
 
@@ -199,7 +199,6 @@ ScmObj doSign(ScmString * curveType, const ScmUVector * DGST, const ScmUVector *
 	goto exit;
     }
 
-    /* TODO reconsider */
     EC_KEY_set_asn1_flag(privKey, OPENSSL_EC_NAMED_CURVE);
     EC_KEY_set_conv_form(privKey, POINT_CONVERSION_UNCOMPRESSED);
 
@@ -213,7 +212,7 @@ ScmObj doSign(ScmString * curveType, const ScmUVector * DGST, const ScmUVector *
     const char * dgst = (char *)SCM_UVECTOR_ELEMENTS(DGST);
     const int dgstlen = SCM_UVECTOR_SIZE(DGST);
 
-    const ECDSA_SIG * signature = ECDSA_do_sign(dgst, dgstlen, privKey);
+    signature = ECDSA_do_sign(dgst, dgstlen, privKey);
 
     if (signature == NULL) {
 	errorMsg = "Failed to sign by private key";
@@ -225,6 +224,7 @@ ScmObj doSign(ScmString * curveType, const ScmUVector * DGST, const ScmUVector *
 exit:
     if (privKey != NULL) EC_KEY_free(privKey);
     if (prv != NULL) BN_free(prv);
+    if (signature != NULL) ECDSA_SIG_free(signature);
 
     if (errorMsg != NULL ) {
 	Scm_Error(errorMsg);

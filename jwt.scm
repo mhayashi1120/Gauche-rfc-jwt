@@ -15,13 +15,13 @@
 
    construct-jwt-header construct-jwt-payload
 
-   jwt-encode jwt-decode)
+   jwt-encode jwt-decode jwt-verify)
   )
 (select-module jwt)
 
 ;; This module just contains hmac digest algorithm ("HS256", "HS384", "HS512", and "none")
 ;; Other algorithm (`Recommended`, `Optionali`) dynamically loaded after detect
-;; algorithm from JWT header.
+;; from JWT header.
 
 ;; RSA algorithm is just `recommended`
 (autoload jwt.rsa rsa-sign rsa-verify?)
@@ -138,6 +138,28 @@
    [iat (cons "iat" iat)]
    [jti (cons "jti" jti)]
    [#t @ (other-keys _other-keys)]))
+
+(define (validate-claims-type payload)
+  (define (NumericDate? x)
+    (and (integer? x)
+         (positive? x)))
+
+  (map
+   (match-lambda
+    [(claim validator? valid-name)
+     (and-let1 v (assoc-ref payload claim)
+       (unless (validator? v)
+         (errorf "Claim ~a should be ~a"
+                 claim valid-name)))])
+   `(
+     ("iss" ,string? "StringOrURI")
+     ("sub" ,string? "StringOrURI")
+     ("aud" ,string? "StringOrURI")
+     ("exp" ,NumericDate? "NumericDate")
+     ("nbf" ,NumericDate? "NumericDate")
+     ("iat" ,NumericDate? "NumericDate")
+     ("jti" ,string? "String")
+     )))
  
 ;;;
 ;;; Encode / Decode (verify)
@@ -163,7 +185,10 @@
          [sign/b64 (base64-urlencode sign)])
     #"~|sign-target|.~|sign/b64|"))
 
-(define (jwt-decode token key :key (verify-signature? #t))
+(define (jwt-decode token key
+                    :key (verify-signature? #t) (validate-type? #t)
+                    ;; This check same as `jwt-verify` procedure's default
+                    (verify-payload? #f))
   (match (string-split token ".")
     [(header/b64 payload/b64 sign/b64)
      (let* ([header (decode-part header/b64)]
@@ -177,24 +202,55 @@
           [(verify? algorithm key header/b64 payload/b64 sign)]
           [else
            (errorf "Not a valid signature")]))
-       ;; TODO Check type (some of field has number or not)
-       ;; introduce verify-type? keyword
+       ;; all of Registered Claims are Optional
+       (when validate-type?
+         (validate-claims-type payload))
+       (when verify-payload?
+         (jwt-verify header payload))
        (values header payload))]
     [else
      (errorf "Invalid Json Web Token ~a"
              token)]))
 
-;; TODO Implements just MUST 
 (define (jwt-verify
          header payload
          :key
-         (iss #f)
-         (aud #f)
+         ;; These are string value
+         (iss #f) (aud #f)
+         ;; Two argument (jti payload) procedure and must return boolean
+         (jti #f)
+         ;; This come from ruby
+         (global-leeway 0)
+         (exp-leeway #f) (nbf-leeway #f)
          (now (sys-time)))
-  ;; TODO currently just verify signature.
-  ;; - Check expire, via NOW
-  (if-let1 exp (assoc-ref header "exp")
-    (when (< exp now)
-      (errorf "Already expired at ~a" exp)))
 
-  )
+  ;; EXP < now <= NBF
+  ;; - Check expire, not-before via NOW
+  (when now
+    (and-let* ([p-exp (assoc-ref payload "exp")]
+               [(<= p-exp (- now (or exp-leeway global-leeway 0)))])
+      (errorf "Already expired at ~a"
+              p-exp))
+  
+    (and-let* ([p-nbf (assoc-ref payload "nbf")]
+               [(> p-nbf (+ now (or nbf-leeway global-leeway 0)))])
+      (errorf "Must not be before at ~a"
+              p-nbf))
+
+    (and-let* ([p-iat (assoc-ref payload "iat")]
+               [(> p-iat now)])
+      (errorf "Must issue before now but ~a"
+              p-iat)))
+
+  (and-let* ([iss]
+             [p-iss (assoc-ref payload "iss")]
+             [(not (string=? iss p-iss))])
+    (errorf "Issuer not valid ~a"
+            p-iss))
+
+  (and-let* ([aud]
+             [p-aud (assoc-ref payload "aud")]
+             [(not (string=? aud p-aud))])
+    (errorf "Audience not valid ~a"
+            p-aud))
+  #t)

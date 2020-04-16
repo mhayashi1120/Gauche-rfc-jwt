@@ -1,0 +1,74 @@
+#!/usr/bin/env gosh
+
+(use math.prime)
+(use rfc.json)
+(use gauche.process)
+(use util.match)
+(use gauche.uvector)
+(use srfi-13)
+(use jwk.ref)
+
+(define (usage)
+  (format #t "usage: ~a PEM-FILE\n" *program-name*))
+
+(debug-print-width #f)
+
+;; Seems working...
+(define (parse s)
+  (define (hex->u8vector hex)
+    (list->u8vector
+     (map
+      (^x (string->number x 16))
+      (string-split (regexp-replace-all* hex #/ / "") ":"))))
+
+  (define (u8vector->base64 u8)
+    (base64-urlencode (u8vector->string u8)))
+
+  (define (hex->base64 hex)
+    ($ u8vector->base64 $ hex->u8vector hex))
+
+  (define (byte-list->base64 l)
+    ($ u8vector->base64 $ list->u8vector l))
+
+  (list
+   (if-let1 m (#/priv: / s)
+     (if-let1 m (#/^([\sa-f0-9:]+)/ (string-trim-both (m 'after)))
+       (hex->base64 (m 1))
+       (error "Not match hex" (m 'after)))
+     (error "Private not found"))
+
+   (if-let1 m (#/pub: / s)
+     (if-let1 m (#/^([\sa-f0-9:]+)/ (string-trim-both (m 'after)))
+       (or (and-let* ([bytes (hex->u8vector (m 1))]
+                      [(= (u8vector-ref bytes 0) 4)]
+                      [bytes/list (cdr (u8vector->list bytes))]
+                      [len (length bytes/list)]
+                      [half-len (div len 2)]
+                      [x (take bytes/list half-len)]
+                      [y (drop bytes/list half-len)])
+             (list (byte-list->base64 x) (byte-list->base64 y)))
+           (error "Not a readable public bytes" (m 1)))
+       (error "Not match hex" (m 'after)))
+     (error "Public not found"))
+
+   (if-let1 m (#/NIST CURVE: ([^\s\t\n]+)/ s)
+     (m 1)
+     (error "Curve not found"))))
+
+(define (main args)
+  (match (cdr args)
+    [(pem-file)
+     (match-let1 (D (X Y) crv) (parse (process-output->string `(openssl ec -noout -text -in ,pem-file) :error 'err))
+       (construct-json
+        (list
+         (cons "kty" "EC")
+         (cons "d" D)
+         (cons "x" X)
+         (cons "y" Y)
+         (cons "crv" crv)
+         )))]
+    [else
+     (usage)
+     (exit 1)])
+  
+  0)

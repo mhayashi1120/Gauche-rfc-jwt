@@ -38,7 +38,7 @@
    ))
 
 ;;;
-;;; Scheme <-> C
+;;; Key
 ;;;
 
 (define (ecdsa-key? jwk-node)
@@ -76,10 +76,14 @@
       :X (bignum-ref jwk-node "x")
       :Y (bignum-ref jwk-node "y"))))
 
+;;;
+;;; Scheme <-> C
+;;;
+
 (define (R&S key signature)
-  (define (->u8vector s start :optional (end #f))
+  (define (->u8vector s :optional (start 0) (end #f))
     (string->u8vector (string-copy s start end)))
-  (let1 pos (/ (string-length signature) 2)
+  (let1 pos (div (string-length signature) 2)
     (values (->u8vector signature 0 pos)
             (->u8vector signature pos))))
 
@@ -99,5 +103,3 @@
          [d/bin (bignum->u8vector (~ private-key'D))])
     (receive (r s) (do-sign (~ private-key 'curve-name) digest/bin d/bin)
       (u8vector->string (u8vector-concatenate (list r s))))))
-
-
