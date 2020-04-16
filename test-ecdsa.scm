@@ -24,12 +24,12 @@
        [header (read-json "tests/rfc7515-a-3-header.json")]
        ;; RFC sample contains newline and some spaces.
        [payload (file->string "tests/rfc7515-a-3-payload.json")]
-       [privKey (read-jwk-private jwk-key)]
+       [privKey (read-ecdsa-private jwk-key)]
        [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
        )
 
   (let1 signature (ecdsa-sign "ES256" signingInput privKey)
-    (let* ([pubKey (read-jwk-public jwk-key)])
+    (let* ([pubKey (read-ecdsa-public jwk-key)])
       (test* #"Verify rfc example signature ~(base64-urlencode signature)" #t
              (ecdsa-verify? "ES256" signingInput signature pubKey)))))
 
@@ -52,25 +52,25 @@
 
 (let* ([jwk-key (read-json "tests/ruby-spec-certs-ec256-private.json")]
        [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
-       [privKey (read-jwk-private jwk-key)])
+       [privKey (read-ecdsa-private jwk-key)])
   (let1 signature (ecdsa-sign "ES256" signingInput privKey)
-    (let* ([pubKey (read-jwk-public jwk-key)])
+    (let* ([pubKey (read-ecdsa-public jwk-key)])
       (test* #"Verify ruby-cert ec256 signature ~(base64-urlencode signature)" #t
              (ecdsa-verify? "ES256" signingInput signature pubKey)))))
 
 (let* ([jwk-key (read-json "tests/ruby-spec-certs-ec384-private.json")]
        [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
-       [privKey (read-jwk-private jwk-key)])
+       [privKey (read-ecdsa-private jwk-key)])
   (let1 signature (ecdsa-sign "ES384" signingInput privKey)
-    (let* ([pubKey (read-jwk-public jwk-key)])
+    (let* ([pubKey (read-ecdsa-public jwk-key)])
       (test* #"Verify ruby-cert ec384 signature ~(base64-urlencode signature)" #t
              (ecdsa-verify? "ES384" signingInput signature pubKey)))))
 
 (let* ([jwk-key (read-json "tests/ruby-spec-certs-ec512-private.json")]
        [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
-       [privKey (read-jwk-private jwk-key)])
+       [privKey (read-ecdsa-private jwk-key)])
   (let1 signature (ecdsa-sign "ES512" signingInput privKey)
-    (let* ([pubKey (read-jwk-public jwk-key)])
+    (let* ([pubKey (read-ecdsa-public jwk-key)])
       (test* #"Verify ruby-cert ec512 signature ~(base64-urlencode signature)" #t
              (ecdsa-verify? "ES512" signingInput signature pubKey)))))
 

@@ -10,7 +10,7 @@
   (use jwk.ref)
   (export
    <rsa-private> <rsa-public>
-   read-jwk-private read-jwk-public
+   read-rsa-private read-rsa-public
 
    rsa-hasher rsa-verify? rsa-sign)
   )
@@ -36,12 +36,12 @@
    (D :init-keyword :D :getter rsa-exponent)
    ))
 
-(define (read-jwk-private jwk-node)
+(define (read-rsa-private jwk-node)
   (make <rsa-private>
     :N (bignum-ref jwk-node "n")
     :D (bignum-ref jwk-node "d")))
 
-(define (read-jwk-public jwk-node)
+(define (read-rsa-public jwk-node)
   (make <rsa-public>
     :N (bignum-ref jwk-node "n")
     :E (bignum-ref jwk-node "e")))

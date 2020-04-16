@@ -108,7 +108,7 @@
        [header (read-json "tests/rfc7515-a-2-header.json")]
        ;; RFC sample contains newline and some spaces.
        [payload (file->string "tests/rfc7515-a-2-payload.json")]
-       [privKey (read-jwk-private jwk-key)]
+       [privKey (read-rsa-private jwk-key)]
        [token (jwt-encode header payload privKey)])
   (test* "Described in RFC"
          (file->string "tests/rfc7515-a-2-result.txt") token))

@@ -14,7 +14,7 @@
    ecdsa-sign ecdsa-verify?
 
    <ecdsa-private-key> <ecdsa-public-key>
-   read-jwk-private read-jwk-public
+   read-ecdsa-private read-ecdsa-public
    )
   )
 (select-module jwt.ecdsa)
@@ -64,7 +64,7 @@
       (errorf "CurveType ~a not supported" crv)])
     (error "CurveType `crv` not detected.")))
 
-(define (read-jwk-private jwk-node)
+(define (read-ecdsa-private jwk-node)
   (receive (hasher curve-type size) (read-key-parameters jwk-node)
     (make <ecdsa-private-key>
       :curve-name curve-type
@@ -72,7 +72,7 @@
       :sign-size size
       :D (bignum-ref jwk-node "d"))))
 
-(define (read-jwk-public jwk-node)
+(define (read-ecdsa-public jwk-node)
   (receive (hasher curve-type size) (read-key-parameters jwk-node)
     (make <ecdsa-public-key>
       :curve-name curve-type
