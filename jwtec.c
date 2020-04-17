@@ -251,7 +251,7 @@ void Scm_Init_jwtec(void)
     SCM_INIT_EXTENSION(jwtec);
 
     /* Create the module if it doesn't exist yet. */
-    mod = SCM_MODULE(SCM_FIND_MODULE("jwt.ecdsa", TRUE));
+    mod = SCM_MODULE(SCM_FIND_MODULE("rfc.jwt.ecdsa", TRUE));
 
     /* Register stub-generated procedures */
     Scm_Init_jwteclib(mod);

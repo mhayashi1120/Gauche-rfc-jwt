@@ -2,11 +2,11 @@
 ;;; ECDSA module for JWT
 ;;;
 
-(define-module jwt.ecdsa
+(define-module rfc.jwt.ecdsa
   (use rfc.base64)
   (use rfc.sha1)
   (use gauche.uvector)
-  (use jwk.ref)
+  (use rfc.jwk.ref)
   (use util.match)
   (export
    list-builtin-curves
@@ -17,7 +17,7 @@
    read-ecdsa-private read-ecdsa-public
    )
   )
-(select-module jwt.ecdsa)
+(select-module rfc.jwt.ecdsa)
 
 ;; Loads extension (To use Openssl libssl)
 (dynamic-load "jwtec")

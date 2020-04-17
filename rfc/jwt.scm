@@ -1,8 +1,8 @@
 ;;;
-;;; jwt
+;;; rfc.jwt
 ;;;
 
-(define-module jwt
+(define-module rfc.jwt
   (use gauche.uvector)
   (use srfi-13)
   (use util.match)
@@ -10,14 +10,14 @@
   (use rfc.json)
   (use rfc.hmac)
   (use rfc.base64)
-  (use jwk.ref)
+  (use rfc.jwk.ref)
   (export
 
    construct-jwt-header construct-jwt-payload
 
    jwt-encode jwt-decode jwt-verify)
   )
-(select-module jwt)
+(select-module rfc.jwt)
 
 ;; This module just contains hmac digest algorithm ("HS256", "HS384", "HS512")
 ;;  and "none" . "HS256" and "none" algorithm is required by RFC7519.
@@ -25,10 +25,10 @@
 ;; by JWT header.
 
 ;; RSA algorithm is just `recommended`
-(autoload jwt.rsa rsa-sign rsa-verify?)
+(autoload rfc.jwt.rsa rsa-sign rsa-verify?)
 
 ;; ECDSA algorithm is marked as `recommended+`
-(autoload jwt.ecdsa ecdsa-sign ecdsa-verify?)
+(autoload rfc.jwt.ecdsa ecdsa-sign ecdsa-verify?)
 
 ;;;
 ;;; Decoder / Encoder

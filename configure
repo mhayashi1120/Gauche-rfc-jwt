@@ -1,5 +1,5 @@
 #!/usr/bin/env gosh
-;; Configuring Gauche-jwt
+;; Configuring Gauche-rfc-jwt
 ;; Run ./configure (or gosh ./configure) to generate Makefiles.
 
 (use gauche.mop.singleton)
@@ -63,7 +63,7 @@
   (unless (memq 'libssl my-with-packages)
     (cf-check-lib "ssl" "EC_KEY_new"))
   (cf-subst-append 'ARCH_LIBSSL_DEPENDS "jwtec.$(SOEXT)")
-  (cf-subst-append 'SCM_LIBSSL_DEPENDS "$(srcdir)/jwt/ecdsa.scm")
+  (cf-subst-append 'SCM_LIBSSL_DEPENDS "$(srcdir)/rfc/jwt/ecdsa.scm")
   (cf-subst-append 'TEST_LIBSSL_DEPENDS "$(srcdir)/test-ecdsa.scm")
   )
 

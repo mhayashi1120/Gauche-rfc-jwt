@@ -2,13 +2,13 @@
 ;;; Part of JWK (RFC7517)
 ;;;
 
-(define-module jwk.ref
+(define-module rfc.jwk.ref
   (use srfi-13)
   (use rfc.base64)
   (use util.match)
   (use gauche.uvector)
   (export-all))
-(select-module jwk.ref)
+(select-module rfc.jwk.ref)
 
 ;;;
 ;;; Base64

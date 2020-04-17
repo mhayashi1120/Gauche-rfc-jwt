@@ -4,9 +4,9 @@
 (use rfc.json)
 (use gauche.test)
 
-(test-start "jwt.ecdsa")
-(use jwt.ecdsa)
-(test-module 'jwt.ecdsa)
+(test-start "rfc.jwt.ecdsa")
+(use rfc.jwt.ecdsa)
+(test-module 'rfc.jwt.ecdsa)
 
 (define (read-json file)
   (with-input-from-file file parse-json))

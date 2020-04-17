@@ -6,15 +6,15 @@
 (use rfc.json)
 (use gauche.test)
 
-(test-start "jwk")
-(use jwk.ref)
-(test-module 'jwk.ref)
+(test-start "rfc.jwk")
+(use rfc.jwk.ref)
+(test-module 'rfc.jwk.ref)
 
 (test-end :exit-on-failure #t)
 
-(test-start "jwt")
-(use jwt)
-(test-module 'jwt)
+(test-start "rfc.jwt")
+(use rfc.jwt)
+(test-module 'rfc.jwt)
 
 (test* "construct header"
        (construct-jwt-header :another "foo")
@@ -112,9 +112,9 @@
 
 (test-end :exit-on-failure #t)
 
-(test-start "jwt.rsa")
-(use jwt.rsa)
-(test-module 'jwt.rsa)
+(test-start "rfc.jwt.rsa")
+(use rfc.jwt.rsa)
+(test-module 'rfc.jwt.rsa)
 
 (define (read-json file)
   (with-input-from-file file parse-json))

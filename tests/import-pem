@@ -6,7 +6,7 @@
 (use util.match)
 (use gauche.uvector)
 (use srfi-13)
-(use jwk.ref)
+(use rfc.jwk.ref)
 
 (define (usage)
   (format #t "usage: ~a PEM-FILE\n" *program-name*))

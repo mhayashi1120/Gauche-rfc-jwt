@@ -25,15 +25,15 @@ LIBS   = "@LIBS@"
 LDFLAGS = "@LDFLAGS@"
 
 # Module-specific stuff
-PACKAGE   = Gauche-jwt
+PACKAGE   = Gauche-rfc-jwt
 
 ARCH_LIBSSL_DEPENDS = @ARCH_LIBSSL_DEPENDS@
 SCM_LIBSSL_DEPENDS = @SCM_LIBSSL_DEPENDS@
 TEST_LIBSSL_DEPENDS = @TEST_LIBSSL_DEPENDS@
 
 ARCHFILES = $(ARCH_LIBSSL_DEPENDS)
-SCMFILES  = $(srcdir)/jwt.scm $(srcdir)/jwt/rsa.scm \
-	$(srcdir)/jwk/ref.scm \
+SCMFILES  = $(srcdir)/rfc/jwt.scm $(srcdir)/rfc/jwt/rsa.scm \
+	$(srcdir)/rfc/jwk/ref.scm \
 	$(SCM_LIBSSL_DEPENDS)
 HEADERS   =
 

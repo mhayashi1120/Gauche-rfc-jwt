@@ -1,4 +1,4 @@
-# Gauche-jwt (RFC7519)
+# Gauche-rfc-jwt (RFC7519)
 
 It's seems working ;-)
 

@@ -1,10 +1,10 @@
 ;;
-;; Package Gauche-jwt
+;; Package Gauche-rfc-jwt
 ;;
 
-(define-gauche-package "Gauche-jwt"
+(define-gauche-package "Gauche-rfc-jwt"
   ;; 
-  :version "0.0.2"
+  :version "0.0.3"
 
   ;; Description of the package.  The first line is used as a short
   ;; summary.
@@ -38,8 +38,8 @@
   :licenses ("BSD")
 
   ;; Homepage URL, if any.
-  :homepage "https://github.com/mhayashi1120/Gauche-jwt/"
+  :homepage "https://github.com/mhayashi1120/Gauche-rfc-jwt/"
 
   ;; Repository URL, e.g. github
-  :repository "git@github.com:mhayashi1120/Gauche-jwt.git"
+  :repository "git@github.com:mhayashi1120/Gauche-rfc-jwt.git"
   )

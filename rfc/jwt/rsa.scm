@@ -2,19 +2,19 @@
 ;;; RSA module for JWT
 ;;;
 
-(define-module jwt.rsa
+(define-module rfc.jwt.rsa
   (use rfc.base64)
   (use rfc.sha1)
   (use gauche.uvector)
   (use util.match)
-  (use jwk.ref)
+  (use rfc.jwk.ref)
   (export
    <rsa-private> <rsa-public>
    read-rsa-private read-rsa-public
 
    rsa-hasher rsa-verify? rsa-sign)
   )
-(select-module jwt.rsa)
+(select-module rfc.jwt.rsa)
 
 ;;;
 ;;; RSA module for JWT
