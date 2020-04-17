@@ -238,8 +238,8 @@
 
     (and-let* ([p-iat (assoc-ref payload "iat")]
                [(> p-iat now)])
-      (errorf "Must issue before now but ~a"
-              p-iat)))
+      (errorf "Must issue-at before now (~a) but ~a"
+              now p-iat)))
 
   (and-let* ([iss]
              [p-iss (assoc-ref payload "iss")]

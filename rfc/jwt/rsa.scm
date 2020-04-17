@@ -17,24 +17,45 @@
 (select-module rfc.jwt.rsa)
 
 ;;;
-;;; RSA module for JWT
+;;; JWK / JWS
 ;;;
 
-;;;
-;;; Key
-;;;
+;;
+;; Key
+;;
 
-(define-class <rsa-public> ()
+(define-class <rsa-key> ()
   (
    (N :init-keyword :N)
+   (size)
+   ))
+
+(define-class <rsa-public> (<rsa-key>)
+  (
    (E :init-keyword :E :getter rsa-exponent)
    ))
 
-(define-class <rsa-private> ()
+(define-class <rsa-private> (<rsa-key>)
   (
-   (N :init-keyword :N)
    (D :init-keyword :D :getter rsa-exponent)
    ))
+
+(define-method initialize ((self <rsa-key>) initargs)
+  (next-method)
+  (let-keywords initargs
+      ([N #f]
+       . _)
+    (let1 key-size (compute-keysize N)
+      (slot-set! self'size key-size))))
+
+(define (rsa-key? jwk-node)
+  (and-let* ([kty (assoc-ref jwk-node "kty")]
+             [(string? kty)])
+    (string=? kty "RSA")))
+
+(define (check-jwk-node jwk-node)
+  (unless (rsa-key? jwk-node)
+    (error "Not a valid key `kty` must be \"RSA\"")))
 
 (define (read-rsa-private jwk-node)
   (make <rsa-private>
@@ -49,9 +70,9 @@
 (define (compute-keysize N)
   (ceiling->exact (log (+ N 1) 256)))
 
-;;;
-;;; PKCS (Part of RFC 3447)
-;;;
+;;
+;; PKCS (Part of RFC 3447)
+;;
 
 ;; RFC 3447 9.2 EMSA-PKCS1-v1_5-ENCODE
 (define (pkcs1-encode hasher m emLen)
@@ -104,19 +125,19 @@
   (expt-mod C (rsa-exponent key) (~ key'N)))
 
 ;;;
-;;; Sign / Verify
+;;; JWT
 ;;;
 
 (define (rsa-verify? algorithm signing-input sign public-key)
   (let* ([hasher (rsa-hasher algorithm)]
-         [M0 (pkcs1-encode hasher signing-input (compute-keysize (~ public-key'N)))]
+         [M0 (pkcs1-encode hasher signing-input (~ public-key'size))]
          [C (string->bignum sign)]
          [M1 (rsa-decrypt C public-key hasher)])
     (equal? M0 M1)))
 
 (define (rsa-sign algorithm s private-key)
   (let* ([hasher (rsa-hasher algorithm)]
-         [M (pkcs1-encode hasher s (compute-keysize (~ private-key'N)))]
+         [M (pkcs1-encode hasher s (~ private-key'size))]
          [C (rsa-encrypt M private-key)]
          [S (bignum->string C)])
     S))

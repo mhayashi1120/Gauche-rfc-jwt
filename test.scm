@@ -69,28 +69,32 @@
        (jwt-verify
         (construct-jwt-header)
         (construct-jwt-payload
-         :exp 1587100001)
+         :exp 1587100001
+         :iat 1586000000)
         :now 1587100001))
 
 (test* "exp verify fail expired2" (test-error)
        (jwt-verify
         (construct-jwt-header)
         (construct-jwt-payload
-         :exp 1587100000)
+         :exp 1587100000
+         :iat 1586000000)
         :now 1587100001))
 
 (test* "exp verify succeeded" #t
        (jwt-verify
         (construct-jwt-header)
         (construct-jwt-payload
-         :exp 1587100002)
+         :exp 1587100002
+         :iat 1586000000)
         :now 1587100001))
 
 (test* "exp verify succeeded with leeway" #t
        (jwt-verify
         (construct-jwt-header)
         (construct-jwt-payload
-         :exp 1587100002)
+         :exp 1587100002
+         :iat 1586000000)
         :now 1587100001
         :global-leeway 1))
 
@@ -98,7 +102,8 @@
        (jwt-verify
         (construct-jwt-header)
         (construct-jwt-payload
-         :nbf 1587100002)
+         :nbf 1587100002
+         :iat 1586000000)
         :now 1587100001
         ))
 
@@ -106,7 +111,8 @@
        (jwt-verify
         (construct-jwt-header)
         (construct-jwt-payload
-         :nbf 1587100002)
+         :nbf 1587100002
+         :iat 1586000000)
         :now 1587100002
         ))
 

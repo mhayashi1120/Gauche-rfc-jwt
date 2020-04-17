@@ -22,6 +22,10 @@
 ;; Loads extension (To use Openssl libssl)
 (dynamic-load "rfc--jwtec")
 
+;;;
+;;; JWK / JWS
+;;;
+
 (define key-parameter-alist
   `(
     ["ES256" ,<sha256> "P-256" 32]
@@ -34,15 +38,15 @@
    (match-lambda [[_ _ c . _] (string=? crv c)])
    key-parameter-alist))
 
-;;;
-;;; JWK
-;;;
+;;
+;; Key
+;;
 
 (define-class <ecdsa-key> ()
   (
-   (curve-name :init-keyword :curve-name)
-   (hasher :init-keyword :hasher)
-   (sign-size :init-keyword :sign-size)
+   (CRV :init-keyword :CRV)
+   (hasher)
+   (sign-size)
    ))
 
 (define-class <ecdsa-private-key> (<ecdsa-key>)
@@ -56,45 +60,47 @@
    (Y :init-keyword :Y)
    ))
 
+(define-method initialize ((self <ecdsa-key>) initargs)
+  (next-method)
+  (let-keywords initargs
+      ([CRV #f]
+       . _)
+    (match (find-keyparameter CRV)
+      [(_ hasher _ size)
+       (slot-set! self'hasher hasher)
+       (slot-set! self'sign-size size)]
+      [else
+       (errorf "CurveType ~a not supported" CRV)])))
+
 (define (ecdsa-key? jwk-node)
   (and-let* ([kty (assoc-ref jwk-node "kty")]
              [(string? kty)])
     (string=? kty "EC")))
 
-(define (read-key-parameters jwk-node)
+(define (check-jwk-node jwk-node)
   (unless (ecdsa-key? jwk-node)
-    (error "Not a valid key `kty` must be \"EC\""))
-  (if-let1 crv (assoc-ref jwk-node "crv")
-    (match (find-keyparameter crv)
-     [(_ hasher _ size)
-      (values hasher crv size)]
-     [else
-      (errorf "CurveType ~a not supported" crv)])
-    (error "CurveType `crv` not detected.")))
+    (error "Not a valid key `kty` must be \"EC\"")))
 
 (define (read-ecdsa-private jwk-node)
-  (receive (hasher curve-type size) (read-key-parameters jwk-node)
-    (make <ecdsa-private-key>
-      :curve-name curve-type
-      :hasher hasher
-      :sign-size size
-      :D (bignum-ref jwk-node "d"))))
+  (check-jwk-node jwk-node)
+  (make <ecdsa-private-key>
+    :CRV (assoc-ref jwk-node "crv")
+    :D (bignum-ref jwk-node "d")))
 
 (define (read-ecdsa-public jwk-node)
-  (receive (hasher curve-type size) (read-key-parameters jwk-node)
-    (make <ecdsa-public-key>
-      :curve-name curve-type
-      :hasher hasher
-      :sign-size size
-      :X (bignum-ref jwk-node "x")
-      :Y (bignum-ref jwk-node "y"))))
+  (check-jwk-node jwk-node)
+  (make <ecdsa-public-key>
+    :CRV (assoc-ref jwk-node "crv")
+    :X (bignum-ref jwk-node "x")
+    :Y (bignum-ref jwk-node "y")))
 
 (define (check-acceptable algorithm key)
-  (let1 crv (~ key'curve-name)
+  (let1 crv (~ key'CRV)
     (match (find-keyparameter crv)
       [(algo hasher . _)
        (unless (eq? hasher (~ key'hasher))
-         (errorf "Curve: ~a Hasher: ~a is not collateral" crv (~ key'hasher)))
+         (errorf "Curve: ~a Hasher: ~a is not collateral for requested algorithm ~a"
+                 crv (~ key'hasher) algorithm))
        (unless (string=? algo algorithm)
          (errorf "Request ~a algorithm but not supported with the Curve: ~a"
                  algorithm crv))]
@@ -119,10 +125,11 @@
          [x/bin (bignum->u8vector (~ public-key'X))]
          [y/bin (bignum->u8vector (~ public-key'Y))])
     (receive (r s) (R&S public-key signature)
-      (do-verify (~ public-key 'curve-name)
+      (do-verify (~ public-key 'CRV)
                  digest/bin r s
                  x/bin y/bin))))
 
+;; To concat R and S with same octet size.
 (define (maybe-fill size src)
   (let1 vlen (u8vector-length src)
     (cond
@@ -140,7 +147,7 @@
   (let* ([digest (digest-string (~ private-key'hasher) signing-input)]
          [digest/bin (string->u8vector digest)]
          [d/bin (bignum->u8vector (~ private-key'D))])
-    (receive (r s) (do-sign (~ private-key'curve-name) digest/bin d/bin)
+    (receive (r s) (do-sign (~ private-key'CRV) digest/bin d/bin)
       (let ([R (maybe-fill (~ private-key'sign-size) r)]
             [S (maybe-fill (~ private-key'sign-size) s)])
       (u8vector->string (u8vector-concatenate (list R S)))))))
