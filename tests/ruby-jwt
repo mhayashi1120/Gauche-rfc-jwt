@@ -5,13 +5,17 @@
 require 'jwt'
 require 'jwt/jwk'
 
-keyFile = '/home/masa/src/github/ruby-jwt/spec/fixtures/certs/ec256-private.pem'
+privKeyfile = '/home/masa/src/github/ruby-jwt/spec/fixtures/certs/ec256-private.pem'
+pubKeyfile = '/home/masa/src/github/ruby-jwt/spec/fixtures/certs/ec256-public.pem'
 
-privateKey = OpenSSL::PKey.read File.read(keyFile)
+privateKey = OpenSSL::PKey.read File.read(privKeyfile)
+publicKey = OpenSSL::PKey.read File.read(pubKeyfile)
 
-JWT.encode({"alg" => "RS256"}, jwk, "RS256", {"iss"=>"joe", "exp"=>1300819380,"http://example.com/is_root"=>true});
+sign = JWT.encode({"alg" => "ES256"}, privateKey, "ES256", {"iss"=>"joe", "exp"=>1300819380,"http://example.com/is_root"=>true});
 
-JWT.decode( sign, publicKey, true, algorithm: "RS256")
+print sign
+
+print JWT.decode( sign, publicKey, true, algorithm: "ES256")
 
 # TODO
 # Check any algorithm

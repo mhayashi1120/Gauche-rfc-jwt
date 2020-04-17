@@ -1,0 +1,9 @@
+#!/usr/bin/env gosh
+
+(use rfc.json)
+(use rfc.jwt)
+(use rfc.jwt.ecdsa)
+
+(let1 jwk-node (with-input-from-file "ruby-spec-certs-ec256-private.json" parse-json)
+  #?= (jwt-decode "eyJpc3MiOiJqb2UiLCJleHAiOjEzMDA4MTkzODAsImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlLCJhbGciOiJFUzI1NiJ9.eyJhbGciOiJFUzI1NiJ9.w_mQms-hX93Ivis12b9PioLNVd0fK4Z0iLQs23wa3npoU-j1Kz_L-YCQKLmOlDy0RuTivTYXIPd2vl2exJyZUQ"
+                  (read-ecdsa-public jwk-node)))
