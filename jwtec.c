@@ -243,7 +243,7 @@ exit:
  */
 extern void Scm_Init_jwteclib(ScmModule*);
 
-void Scm_Init_jwtec(void)
+void Scm_Init_rfc__jwtec(void)
 {
     ScmModule *mod;
 

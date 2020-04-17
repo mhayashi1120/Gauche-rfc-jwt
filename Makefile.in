@@ -52,12 +52,12 @@ jwtec_SRCS = $(srcdir)/jwtec.c $(srcdir)/jwteclib.stub
 
 all : $(TARGET)
 
-jwtec.$(SOEXT): $(jwtec_SRCS) jwtec.h
+rfc--jwtec.$(SOEXT): $(jwtec_SRCS) jwtec.h
 	$(GAUCHE_PACKAGE) compile \
 	  $(MY_DEBUGGING) \
 	  --ldflags=$(LDFLAGS) \
 	  --libs=$(LIBS) \
-	  --local=$(LOCAL_PATHS) --verbose jwtec $(jwtec_SRCS)
+	  --local=$(LOCAL_PATHS) --verbose rfc--jwtec $(jwtec_SRCS)
 
 check : all
 	@rm -f test.log
@@ -76,7 +76,7 @@ uninstall :
 	$(INSTALL) -U $(GAUCHE_PKGLIBDIR)/.packages $(PACKAGE).gpd
 
 clean :
-	$(GAUCHE_PACKAGE) compile --clean jwtec $(jwtec_SRCS)
+	$(GAUCHE_PACKAGE) compile --clean rfc--jwtec $(jwtec_SRCS)
 	rm -rf core $(TARGET) $(GENERATED) *~ test.log so_locations
 
 distclean : clean

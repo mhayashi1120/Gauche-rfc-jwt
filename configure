@@ -62,7 +62,7 @@
     (cf-check-lib "crypto" "NCONF_new"))
   (unless (memq 'libssl my-with-packages)
     (cf-check-lib "ssl" "EC_KEY_new"))
-  (cf-subst-append 'ARCH_LIBSSL_DEPENDS "jwtec.$(SOEXT)")
+  (cf-subst-append 'ARCH_LIBSSL_DEPENDS "rfc--jwtec.$(SOEXT)")
   (cf-subst-append 'SCM_LIBSSL_DEPENDS "$(srcdir)/rfc/jwt/ecdsa.scm")
   (cf-subst-append 'TEST_LIBSSL_DEPENDS "$(srcdir)/test-ecdsa.scm")
   )

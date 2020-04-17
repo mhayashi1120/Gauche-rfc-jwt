@@ -20,7 +20,7 @@
 (select-module rfc.jwt.ecdsa)
 
 ;; Loads extension (To use Openssl libssl)
-(dynamic-load "jwtec")
+(dynamic-load "rfc--jwtec")
 
 (define-class <ecdsa-key> ()
   (
