@@ -1,11 +1,2 @@
 Check ecdsa algorithm is correctly working with other library (ruby-jwt)
 test ecdsa encode
-
-EC_builtin_curve * curves = SCM_NEW_ARRAY(EC_builtin_curve, crv_len);
-need free?
-
-considering other scenario
-1. transfer JWT token (unknown encoding yet).
-2. decode token (reveal algorithm)
-3. read key if need (RSA, ECDSA has each key)
-4. verify token by above key
