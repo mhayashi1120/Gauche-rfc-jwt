@@ -22,6 +22,22 @@
 ;; Loads extension (To use Openssl libssl)
 (dynamic-load "rfc--jwtec")
 
+(define key-parameter-alist
+  `(
+    ["ES256" ,<sha256> "P-256" 32]
+    ["ES384" ,<sha384> "P-384" 48]
+    ["ES512" ,<sha512> "P-521" 66]
+    ))
+
+(define (find-keyparameter crv)
+  (find
+   (match-lambda [[_ _ c . _] (string=? crv c)])
+   key-parameter-alist))
+
+;;;
+;;; JWK
+;;;
+
 (define-class <ecdsa-key> ()
   (
    (curve-name :init-keyword :curve-name)
@@ -40,10 +56,6 @@
    (Y :init-keyword :Y)
    ))
 
-;;;
-;;; Key
-;;;
-
 (define (ecdsa-key? jwk-node)
   (and-let* ([kty (assoc-ref jwk-node "kty")]
              [(string? kty)])
@@ -53,13 +65,9 @@
   (unless (ecdsa-key? jwk-node)
     (error "Not a valid key `kty` must be \"EC\""))
   (if-let1 crv (assoc-ref jwk-node "crv")
-    (match crv
-     ["P-256"
-      (values <sha256> crv 32)]
-     ["P-384"
-      (values <sha384> crv 48)]
-     ["P-521"
-      (values <sha512> crv 66)]
+    (match (find-keyparameter crv)
+     [(_ hasher _ size)
+      (values hasher crv size)]
      [else
       (errorf "CurveType ~a not supported" crv)])
     (error "CurveType `crv` not detected.")))
@@ -81,9 +89,17 @@
       :X (bignum-ref jwk-node "x")
       :Y (bignum-ref jwk-node "y"))))
 
-;;;
-;;; Scheme <-> C
-;;;
+(define (check-acceptable algorithm key)
+  (let1 crv (~ key'curve-name)
+    (match (find-keyparameter crv)
+      [(algo hasher . _)
+       (unless (eq? hasher (~ key'hasher))
+         (errorf "Curve: ~a Hasher: ~a is not collateral" crv (~ key'hasher)))
+       (unless (string=? algo algorithm)
+         (errorf "Request ~a algorithm but not supported with the Curve: ~a"
+                 algorithm crv))]
+      [else
+       (errorf "Not a supported curve ~a" crv)])))
 
 (define (R&S key signature)
   (define (->u8vector s :optional (start 0) (end #f))
@@ -92,7 +108,12 @@
     (values (->u8vector signature 0 pos)
             (->u8vector signature pos))))
 
+;;;
+;;; JWT
+;;;
+
 (define (ecdsa-verify? algorithm signing-input signature public-key)
+  (check-acceptable algorithm public-key)
   (let* ([digest (digest-string (~ public-key'hasher) signing-input)]
          [digest/bin (string->u8vector digest)]
          [x/bin (bignum->u8vector (~ public-key'X))]
@@ -115,6 +136,7 @@
           (u8vector-copy! dst dstart src)))])))
 
 (define (ecdsa-sign algorithm signing-input private-key)
+  (check-acceptable algorithm private-key)
   (let* ([digest (digest-string (~ private-key'hasher) signing-input)]
          [digest/bin (string->u8vector digest)]
          [d/bin (bignum->u8vector (~ private-key'D))])
