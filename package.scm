@@ -8,14 +8,14 @@
 
   ;; Description of the package.  The first line is used as a short
   ;; summary.
-  :description "Json Web Token (JWT) \n\
-                ."
+  :description "Json Web Token (JWT) Sign and Verify\n\
+                "
 
   ;; List of dependencies.
   ;; Example:
   ;;     :require (("Gauche" (>= "0.9.5"))  ; requires Gauche 0.9.5 or later
   ;;               ("Gauche-gl" "0.6"))     ; and Gauche-gl 0.6
-  :require ()
+  :require (("Gauche" (>= "0.9.9")))
 
   ;; List of providing modules
   ;; NB: This will be recognized >= Gauche 0.9.7.
@@ -26,7 +26,7 @@
   ;; List name and contact info of authors.
   ;; e.g. ("Eva Lu Ator <eval@example.com>"
   ;;       "Alyssa P. Hacker <lisper@example.com>")
-  :authors ()
+  :authors ("Masahiro Hayashi <mhayashi1120@gmail.com>")
 
   ;; List name and contact info of package maintainers, if they differ
   ;; from authors.
@@ -38,8 +38,8 @@
   :licenses ("BSD")
 
   ;; Homepage URL, if any.
-  ; :homepage "http://example.com/Gauche-jwt/"
+  :homepage "https://github.com/mhayashi1120/Gauche-jwt/"
 
   ;; Repository URL, e.g. github
-  ; :repository "http://example.com/Gauche-jwt.git"
+  :repository "git@github.com:mhayashi1120/Gauche-jwt.git"
   )

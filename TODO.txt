@@ -10,3 +10,8 @@ considering other scenario
 2. decode token (reveal algorithm)
 3. read key if need (RSA, ECDSA has each key)
 4. verify token by above key
+
+
+rename
+Gauche-rfc-jwt
+

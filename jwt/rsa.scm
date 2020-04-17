@@ -67,6 +67,9 @@
            [EM `(#x00 #x01 ,@PS #x00 ,@T)])
       (u8vector->bignum (list->u8vector EM)))))
 
+;; Gauche ext/tls/axTLS/ssl/x509.c
+;; -> sig_prefix_sha256
+
 ;; RFC 3447 9.2 Notes
 ;; SHA-256: (0x)30 31 30 0d 06 09 60 86 48 01 65 03 04 02 01 05 00 04 20
 ;; SHA-384: (0x)30 41 30 0d 06 09 60 86 48 01 65 03 04 02 02 05 00 04 30
