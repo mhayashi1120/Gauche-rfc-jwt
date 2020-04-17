@@ -26,7 +26,6 @@ ScmObj getBuiltinCurves()
 
     size_t crv_len = EC_get_builtin_curves(NULL, 0);
 
-    /* TODO how to release? */
     EC_builtin_curve * curves = SCM_NEW_ARRAY(EC_builtin_curve, crv_len);
 
     if (!EC_get_builtin_curves(curves, crv_len)) {
@@ -144,7 +143,7 @@ ScmObj doVerify(ScmString * curveType, const ScmUVector *DGST,
     }
 
     /* x, y seems non changed const values */
-    if (! EC_KEY_set_public_key_affine_coordinates(pubKey, (BIGNUM*)x, (BIGNUM*)y)) {
+    if (! EC_KEY_set_public_key_affine_coordinates(pubKey, x, y)) {
 	errorMsg = "Failed to set public key.";
 	goto exit;
     }
