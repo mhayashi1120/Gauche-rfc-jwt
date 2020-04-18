@@ -121,7 +121,7 @@
 (define (rsa-encrypt M key)
   (expt-mod M (rsa-exponent key) (~ key'N)))
 
-(define (rsa-decrypt C key hasher)
+(define (rsa-decrypt C key)
   (expt-mod C (rsa-exponent key) (~ key'N)))
 
 ;;;
@@ -132,7 +132,7 @@
   (let* ([hasher (rsa-hasher algorithm)]
          [M0 (pkcs1-encode hasher signing-input (~ public-key'size))]
          [C (string->bignum sign)]
-         [M1 (rsa-decrypt C public-key hasher)])
+         [M1 (rsa-decrypt C public-key)])
     (equal? M0 M1)))
 
 (define (rsa-sign algorithm s private-key)
