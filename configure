@@ -9,12 +9,11 @@
 ;; and cf-arg-with.  Note that --with-local is handled implicitly if you use
 ;; cf-init-gauche-extension.
 
-(define my-activate-libssl #t)
-(define my-with-packages '())
-
 (define (my-prepend-lib*-ldflags package)
   (^ [arg]
-    (push! my-with-packages package)
+    (unless (file-exists? arg)
+      (format #t "~a not found.\n")
+      (exit 1))
     (cf-subst-prepend 'LDFLAGS arg)))
 
 (cf-arg-enable
@@ -23,7 +22,7 @@
   --enable-esdsa          Use ESDSA digest.
   --disable-esdsa         Do not use ESDSA digest.
 "
- (^[val] (and (string=? val "no") (set! my-activate-libssl #f))))
+ )
 
 (cf-arg-with
  'libssl
@@ -40,27 +39,27 @@
 (cf-init-gauche-extension)
 
 ;; Here you can add feature tests and other cf-define's.
-(cf-lang (instance-of <c-language>))
+
+(define (ensure-subst symbol)
+  (unless (cf-have-subst? symbol)
+    (cf-subst symbol "")))
 
 ;; These subsutitutions come from environment. Maybe empty.
-(unless (cf-have-subst? 'LIBS)
-  (cf-subst 'LIBS ""))
-(unless (cf-have-subst? 'LDFLAGS)
-  (cf-subst 'LDFLAGS ""))
+(ensure-subst 'LIBS)
+(ensure-subst 'LDFLAGS)
+(ensure-subst 'ARCH_LIBSSL_DEPENDS)
+(ensure-subst 'SCM_LIBSSL_DEPENDS)
+(ensure-subst 'TEST_LIBSSL_DEPENDS)
 
-(cf-subst 'ARCH_LIBSSL_DEPENDS "")
-(cf-subst 'SCM_LIBSSL_DEPENDS "")
-(cf-subst 'TEST_LIBSSL_DEPENDS "")
-
-(when my-activate-libssl
+(when (member (cf-feature-ref 'esdsa) '(#f "yes"))
   (cf-check-headers '("openssl/conf.h"))
   (cf-check-headers '("openssl/ec.h"))
 
   ;; Checking early entry point FN of LIB
 
-  (unless (memq 'libcrypto my-with-packages)
+  (unless (cf-package-ref 'libcrypto)
     (cf-check-lib "crypto" "NCONF_new"))
-  (unless (memq 'libssl my-with-packages)
+  (unless (cf-package-ref 'libssl)
     (cf-check-lib "ssl" "EC_KEY_new"))
   (cf-subst-append 'ARCH_LIBSSL_DEPENDS "rfc--jwtec.$(SOEXT)")
   (cf-subst-append 'SCM_LIBSSL_DEPENDS "$(srcdir)/rfc/jwt/ecdsa.scm")
