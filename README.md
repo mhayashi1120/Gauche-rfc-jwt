@@ -21,3 +21,6 @@ Support RFC7519 (JWT)
 - RFC7518 (JWA)
 
 ## TODO
+
+- Check ecdsa algorithm is correctly working with other library (ruby-jwt)
+- add test ecdsa encode

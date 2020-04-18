@@ -1,2 +1,0 @@
-Check ecdsa algorithm is correctly working with other library (ruby-jwt)
-test ecdsa encode
