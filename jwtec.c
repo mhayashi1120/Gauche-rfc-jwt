@@ -11,62 +11,7 @@
 
 #include "jwtec.h"
 
-static ScmObj getMaybeName(const char * name)
-{
-    if (name == NULL) {
-	return SCM_FALSE;
-    }
-
-    return SCM_MAKE_STR_COPYING(name);
-}
-
-ScmObj getBuiltinCurves()
-{
-    char * errorMsg = NULL;
-
-    size_t crv_len = EC_get_builtin_curves(NULL, 0);
-
-    EC_builtin_curve * curves = SCM_NEW_ARRAY(EC_builtin_curve, crv_len);
-
-    if (!EC_get_builtin_curves(curves, crv_len)) {
-	errorMsg = "Unable get curves";
-	goto exit;
-    }
-
-    ScmObj result = SCM_NIL;
-
-    /* Start from tail */
-    EC_builtin_curve * curve = curves + crv_len - 1;
-
-    for (int i = 0; i < crv_len; i++, curve--)
-    {
-	const char * comment = curve->comment;
-	const int nid = curve->nid;
-	const char * name = EC_curve_nid2nist(nid);
-	const char * ln = OBJ_nid2ln(nid);
-	const char * sn = OBJ_nid2sn(nid);
-
-	ScmObj item = SCM_NIL;
-
-	item = Scm_Cons(Scm_MakeInteger(nid), item);
-	item = Scm_Cons(getMaybeName(name), item);
-	item = Scm_Cons(getMaybeName(ln), item);
-	item = Scm_Cons(getMaybeName(sn), item);
-	item = Scm_Cons(getMaybeName(comment), item);
-
-	result = Scm_Cons(Scm_ListToVector(item, 0, -1), result);
-    }
-
-exit:
-
-    if (errorMsg != NULL) {
-	Scm_Error(errorMsg);
-    }
-
-    return result;
-}
-
-BIGNUM * ScmUVectorToBignum(const ScmUVector * v)
+static BIGNUM * ScmUVectorToBignum(const ScmUVector * v)
 {
     BIGNUM * bn = BN_new();
     const unsigned char *body = (unsigned char*)SCM_UVECTOR_ELEMENTS(v);
@@ -77,7 +22,7 @@ BIGNUM * ScmUVectorToBignum(const ScmUVector * v)
     return bn;
 }
 
-ScmObj readBNToVector(BIGNUM * bn)
+static ScmObj readBNToVector(BIGNUM * bn)
 {
     int numBytes = BN_num_bytes(bn);
     char * array =  SCM_NEW_ATOMIC_ARRAY(char, numBytes);
@@ -89,7 +34,7 @@ ScmObj readBNToVector(BIGNUM * bn)
     return Scm_MakeUVector(SCM_CLASS_U8VECTOR, size, array);
 }
 
-ScmObj ECSignatureToVectors(const ECDSA_SIG * signature)
+static ScmObj ECSignatureToVectors(const ECDSA_SIG * signature)
 {
     BIGNUM * r = NULL, * s = NULL;
     
@@ -105,7 +50,7 @@ exit:
     return result;
 }
 
-EC_KEY * ensureECKeyByCurveType(ScmString * curveType)
+static EC_KEY * ensureECKeyByCurveType(ScmString * curveType)
 {
     const char * curve_type = Scm_GetStringConst(curveType);
     int nid = EC_curve_nist2nid(curve_type);

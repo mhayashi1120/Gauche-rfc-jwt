@@ -11,10 +11,6 @@
 (define (read-json file)
   (with-input-from-file file parse-json))
 
-(test* "Get builtin curves" #f
-       (list-builtin-curves)
-       (^ [_ result] (pair? result)))
-
 (let* ([jwk-key (read-json "tests/rfc7515-a-3-jwkkey.json")]
        [header (read-json "tests/rfc7515-a-3-header.json")]
        ;; RFC sample contains newline and some spaces.

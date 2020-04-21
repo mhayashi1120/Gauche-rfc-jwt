@@ -9,8 +9,6 @@
   (use rfc.jwk.ref)
   (use util.match)
   (export
-   list-builtin-curves
-
    ecdsa-sign ecdsa-verify?
 
    <ecdsa-private-key> <ecdsa-public-key>

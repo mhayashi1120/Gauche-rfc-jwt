@@ -17,8 +17,6 @@ extern ScmObj doVerify(ScmString * curveType, const ScmUVector *DGST,
 		const ScmUVector *R, const ScmUVector *S,
 		const ScmUVector *X, const ScmUVector *Y);
 
-extern ScmObj getBuiltinCurves();
-
 /* Epilogue */
 SCM_DECL_END
 

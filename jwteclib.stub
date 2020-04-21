@@ -17,11 +17,6 @@
                          x::<u8vector> y::<u8vector>)
   (return (doVerify curve-type dgst r s x y)))
 
-;; list of ITEM
-;; ITEM : #(nid nist-name ln sn comment)
-(define-cproc list-builtin-curves ()
-  (return (getBuiltinCurves)))
-
 ;; Local variables:
 ;; mode: scheme
 ;; end:
