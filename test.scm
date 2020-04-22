@@ -40,7 +40,7 @@
   ;; 1. unknown algorithm yet (e.g. HS256 | ES256 | RS256) cannot decide KEY.
   ;; 2. KEY as #f and :verify-signature? #f to read header and payload.
   ;; 3. detect "alg" parameter from header.
-  ;; 4. read correct algorithm KEY.
+  ;; 4. read requested algorithm KEY beforehand exchanged.
   ;; 5. call again `jwt-decode` with above KEY and verify.
   (receive (header payload) (jwt-decode token #f :verify-signature? #f)
     (test* "header1 non-verified and no-key" header1 header)

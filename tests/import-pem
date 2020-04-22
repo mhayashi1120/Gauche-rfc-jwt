@@ -55,6 +55,9 @@
      (m 1)
      (error "Curve not found"))))
 
+;; Samples:
+;; RSA openssl rsa -pubin -noout -text -in rsa-2048-public.pem
+;; ECDSA  openssl ec -pubin -noout -text -in ec512-public.pem
 (define (main args)
   (match (cdr args)
     [(pem-file)

@@ -197,7 +197,9 @@
        (when verify-signature?
          (cond
           [(not algorithm)
-           (error "Algorithm not detected")]
+           (error "Algorithm not detected.")]
+          [(not key)
+           (error "No key is supplied to verify signature.")]
           [(verify? algorithm key header/b64 payload/b64 sign)]
           [else
            (errorf "Not a valid signature")]))
