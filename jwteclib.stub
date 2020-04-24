@@ -14,7 +14,7 @@
 (define-cproc do-verify (curve-type::<string>
                          dgst::<u8vector>
                          r::<u8vector> s::<u8vector>
-                         x::<u8vector> y::<u8vector>)
+                         x::<u8vector> y::<u8vector>) :: <boolean>
   (return (doVerify curve-type dgst r s x y)))
 
 ;; Local variables:
