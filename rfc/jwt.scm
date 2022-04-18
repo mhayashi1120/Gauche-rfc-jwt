@@ -184,6 +184,7 @@
          [sign/b64 (base64-urlencode sign)])
     #"~|sign-target|.~|sign/b64|"))
 
+;; KEY can be #f if `verify-signature?` keyword is #f
 (define (jwt-decode token key
                     :key (verify-signature? #t) (validate-type? #t)
                     ;; This check same as `jwt-verify` procedure's default
