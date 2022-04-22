@@ -1,0 +1,17 @@
+#!/usr/bin/env gosh
+
+(use rfc.jwt.rsa)
+(use gauche.process)
+(use rfc.json)
+
+(receive (ip op) (sys-pipe)
+  (do-pipeline
+   `(
+     (curl -s "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com")
+     (jq -r ".[]")
+     (openssl x509 -noout -inform PEM -pubkey -in "-")
+     (./import-pem "-")
+     )
+   :output op)
+  (close-port op)
+  #?= (read-rsa-public (parse-json ip)))

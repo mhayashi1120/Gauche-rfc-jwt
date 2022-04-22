@@ -38,6 +38,16 @@ Optionally you can validate the payload:
 ```
 
 
+### Import PEM (Sample)
+
+see ./samples/import-pem
+
+### Firebase sample
+
+[Verify ID Tokens &nbsp;|&nbsp; Firebase Documentation](https://firebase.google.com/docs/auth/admin/verify-id-tokens)
+
+see ./samples/import-firebase
+
 ## Ref:
 
 - https://jwt.io/

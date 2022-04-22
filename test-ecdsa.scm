@@ -37,7 +37,7 @@
 ;; 2. Generate JWK key.
 ;; 2-1. "kty" -> "EC" "crv" -> P-256 / P-384 / P-521
 ;; 2-2. "d", "x", "y" -> above
-;; Above process is implemented in tests/import-pem
+;; Above process is implemented in samples/import-pem
 
 (let* ([jwk-key (read-json "tests/ruby-spec-certs-ec256-private.json")]
        [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
