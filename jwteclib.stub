@@ -15,7 +15,7 @@
                          dgst::<u8vector>
                          r::<u8vector> s::<u8vector>
                          x::<u8vector> y::<u8vector>) :: <boolean>
-  (return (doVerify curve-type dgst r s x y)))
+  (return (SCM_BOOL_VALUE (doVerify curve-type dgst r s x y))))
 
 ;; Local variables:
 ;; mode: scheme

@@ -4,7 +4,7 @@
 
 (define-gauche-package "Gauche-rfc-jwt"
   ;; 
-  :version "0.0.5"
+  :version "0.1.0"
 
   ;; Description of the package.  The first line is used as a short
   ;; summary.
@@ -15,13 +15,13 @@
   ;; Example:
   ;;     :require (("Gauche" (>= "0.9.5"))  ; requires Gauche 0.9.5 or later
   ;;               ("Gauche-gl" "0.6"))     ; and Gauche-gl 0.6
-  :require (("Gauche" (>= "0.9.9")))
+  :require (("Gauche" (>= "0.9.11-p1")))
 
   ;; List of providing modules
   ;; NB: This will be recognized >= Gauche 0.9.7.
   ;; Example:
   ;;      :providing-modules (util.algorithm1 util.algorithm1.option)
-  :providing-modules ()
+  :providing-modules (rfc.jwt)
   
   ;; List name and contact info of authors.
   ;; e.g. ("Eva Lu Ator <eval@example.com>"
