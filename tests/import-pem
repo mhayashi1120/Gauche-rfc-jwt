@@ -1,5 +1,6 @@
 #!/usr/bin/env gosh
 
+(use text.tr)
 (use math.prime)
 (use rfc.json)
 (use gauche.process)
@@ -9,67 +10,144 @@
 (use rfc.jwk.ref)
 
 (define (usage)
-  (format #t "usage: ~a PEM-FILE\n" *program-name*))
+  (format #t "usage: ~a PEM-FILE\n" (script-file)))
 
 (debug-print-width #f)
 
+(define (hex->u8vector hex)
+  (list->u8vector
+   (map
+    (^x (string->number x 16))
+    (string-split (regexp-replace-all* hex #/ / "") ":"))))
+
+(define (number->u8vector n)
+  (list->u8vector
+   (let loop ([n n]
+              [r '()])
+     (cond
+      [(zero? n)
+       r]
+      [else
+       (loop (ash n -8) (cons (logand n #xff) r))]))))
+
+(define (u8vector->base64 u8)
+  (base64-urlencode (u8vector->string u8)))
+
+(define (hex->base64 hex)
+  ($ u8vector->base64 $ hex->u8vector hex))
+
+(define (number->base64 n)
+  ($ u8vector->base64 $ number->u8vector n))
+
+(define (byte-list->base64 l)
+  ($ u8vector->base64 $ list->u8vector l))
+
 ;; Seems working...
-(define (parse s)
-  (define (hex->u8vector hex)
-    (list->u8vector
-     (map
-      (^x (string->number x 16))
-      (string-split (regexp-replace-all* hex #/ / "") ":"))))
+(define (parse-ec-pem s)
+  (guard (e [else #f])
+    (list
+     (if-let1 m (#/priv: / s)
+       (if-let1 m (#/^([\sa-f0-9:]+)/ (string-trim-both (m 'after)))
+         (hex->base64 (m 1))
+         (error "Not match hex" (m 'after)))
+       (error "Private not found"))
 
-  (define (u8vector->base64 u8)
-    (base64-urlencode (u8vector->string u8)))
+     (if-let1 m (#/pub: / s)
+       (if-let1 m (#/^([\sa-f0-9:]+)/ (string-trim-both (m 'after)))
+         (or (and-let* ([bytes (hex->u8vector (m 1))]
+                        [(= (u8vector-ref bytes 0) 4)]
+                        [bytes/list (cdr (u8vector->list bytes))]
+                        [len (length bytes/list)]
+                        [half-len (div len 2)]
+                        [x (take bytes/list half-len)]
+                        [y (drop bytes/list half-len)])
+               (list (byte-list->base64 x) (byte-list->base64 y)))
+             (error "Not a readable public bytes" (m 1)))
+         (error "Not match hex" (m 'after)))
+       (error "Public not found"))
 
-  (define (hex->base64 hex)
-    ($ u8vector->base64 $ hex->u8vector hex))
+     (if-let1 m (#/NIST CURVE: ([^\s\t\n]+)/ s)
+       (m 1)
+       (error "Curve not found")))))
 
-  (define (byte-list->base64 l)
-    ($ u8vector->base64 $ list->u8vector l))
+;; curl -s "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com" | jq -r '.[]' | openssl x509 -noout -inform PEM -pubkey -in "-" | openssl rsa -noout -modulus -pubin -in "-"
 
-  (list
-   (if-let1 m (#/priv: / s)
-     (if-let1 m (#/^([\sa-f0-9:]+)/ (string-trim-both (m 'after)))
-       (hex->base64 (m 1))
-       (error "Not match hex" (m 'after)))
-     (error "Private not found"))
 
-   (if-let1 m (#/pub: / s)
-     (if-let1 m (#/^([\sa-f0-9:]+)/ (string-trim-both (m 'after)))
-       (or (and-let* ([bytes (hex->u8vector (m 1))]
-                      [(= (u8vector-ref bytes 0) 4)]
-                      [bytes/list (cdr (u8vector->list bytes))]
-                      [len (length bytes/list)]
-                      [half-len (div len 2)]
-                      [x (take bytes/list half-len)]
-                      [y (drop bytes/list half-len)])
-             (list (byte-list->base64 x) (byte-list->base64 y)))
-           (error "Not a readable public bytes" (m 1)))
-       (error "Not match hex" (m 'after)))
-     (error "Public not found"))
+(define (parse-rsa-pem s)
+  (guard (e [else #?= e #f])
+    (list
+     (if-let1 m (#/RSA Public-Key: *?\(([0-9]+) bit\)/ s)
+       (string->number (m 1))
+       (error "Not matched as RSA public key"))
+     (if-let1 m (#/Modulus: / s)
+       (if-let1 m (#/^([\sa-f0-9:]+)/ (string-trim-both (m 'after)))
+         (hex->base64 (m 1))
+         (error "Not match hex" (m 'after)))
+       (error "Modulus not found"))
 
-   (if-let1 m (#/NIST CURVE: ([^\s\t\n]+)/ s)
-     (m 1)
-     (error "Curve not found"))))
+     (if-let1 m (#/Exponent: *([0-9]+)/ s)
+       (number->base64 (string->number (m 1)))
+       (error "No exponent."))
+     )))
+
+(define (try-call-openssl pem-file commands)
+  (guard (e [else ""])
+    (let ([iport (cond
+                  [(string=? pem-file "-")
+                   (current-input-port)]
+                  [else
+                   (open-input-file pem-file)])])
+      (receive (port p) (open-input-process-port
+                         `(openssl ,@commands "-in" "-")
+                         :input iport
+                         :error :null)
+        (process-wait p)
+        (unless (= (process-exit-status p) 0)
+          (error "Failed execute openssl"))
+        (string-tr (port->string port) "\n" " ")))))
+
+(define (try-rsa pem-file)
+  (match (parse-rsa-pem (try-call-openssl pem-file `(rsa -noout -text -pubin)))
+    [(bit N E)
+     (construct-json
+      (list
+       (cons "kty" "RSA")
+       (cons "n" N)
+       (cons "e" E)))]
+    [else
+     #f]))
+
+(define (try-ec pem-file)
+  (match (parse-ec-pem (try-call-openssl pem-file `(ec -noout -text)))
+    [(D (X Y) crv) 
+     (construct-json
+      (list
+       (cons "kty" "EC")
+       (cons "d" D)
+       (cons "x" X)
+       (cons "y" Y)
+       (cons "crv" crv)
+       ))]
+    [else
+     #f]))
+
+(define (run-import pem-file)
+  (or (try-rsa pem-file)
+      (try-ec pem-file)
+      (error "Failed parse pem" pem-file)))
 
 ;; Samples:
 ;; RSA openssl rsa -pubin -noout -text -in rsa-2048-public.pem
 ;; ECDSA  openssl ec -pubin -noout -text -in ec512-public.pem
+
+;; - Multiple key entries return, but just use first one.
+;; curl -s "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com" | jq -r '.[]' | openssl x509 -noout -inform PEM -pubkey -in "-" | ./import-pem "-"
+
+
 (define (main args)
   (match (cdr args)
     [(pem-file)
-     (match-let1 (D (X Y) crv) (parse (process-output->string `(openssl ec -noout -text -in ,pem-file) :error 'err))
-       (construct-json
-        (list
-         (cons "kty" "EC")
-         (cons "d" D)
-         (cons "x" X)
-         (cons "y" Y)
-         (cons "crv" crv)
-         )))]
+     (run-import pem-file)]
     [else
      (usage)
      (exit 1)])
