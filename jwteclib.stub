@@ -7,9 +7,10 @@
  (.include "jwtec.h")
  )
 
-(define-cproc do-sign (curve-type::<string> body::<u8vector> d::<u8vector>) :: <string>
-  (return
-   (SCM_STRING (doSign curve-type body d))))
+(define-cproc do-sign (curve-type::<string>
+                       body::<u8vector>
+                       d::<u8vector>) :: <string>
+  (return (SCM_STRING (doSign curve-type body d))))
 
 (define-cproc do-verify (curve-type::<string>
                          dgst::<u8vector>
