@@ -97,10 +97,10 @@
     (match (find-keyparameter crv)
       [(algo hasher . _)
        (unless (eq? hasher (~ key'hasher))
-         (errorf "Curve: ~a Hasher: ~a is not collateral for requested algorithm ~a"
+         (errorf "Curve: ~a Hasher: ~a could not collaborate with requested algorithm ~a"
                  crv (~ key'hasher) algorithm))
        (unless (string=? algo algorithm)
-         (errorf "Request ~a algorithm but not supported with the Curve: ~a"
+         (errorf "Requested ~a algorithm but not supported with the Curve: ~a"
                  algorithm crv))]
       [else
        (errorf "Not a supported curve ~a" crv)])))
