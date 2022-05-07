@@ -87,7 +87,7 @@
     [(or "ES256" "ES384" "ES512")
      (ecdsa-sign algorithm target key)]
     [else
-     (errorf "Not yet supported algorithm ~a" algorithm)]))
+     (errorf "Not a supported algorithm ~a" algorithm)]))
 
 (define (verify? algorithm key header/b64 payload/b64 sign)
   (let* ([signing-input #"~|header/b64|.~|payload/b64|"])
@@ -99,7 +99,9 @@
       [(or "RS256" "RS384" "RS512")
        (rsa-verify? algorithm signing-input sign key)]
       [(or "ES256" "ES384" "ES512")
-       (ecdsa-verify? algorithm signing-input sign key)])))
+       (ecdsa-verify? algorithm signing-input sign key)]
+      [else
+       (errorf "Not a supported algorithm ~a" algorithm)])))
 
 ;;;
 ;;; Construct json
