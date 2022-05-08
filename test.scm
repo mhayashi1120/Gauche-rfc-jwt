@@ -134,10 +134,20 @@
   (test* "Described in RFC"
          (file->string "tests/rfc7515-a-2-result.txt") token))
 
+(test-section "Sub tests")
+
+(let ([optional-tests *argv*])
+  (dolist (test optional-tests)
+    (test-log "Sub test ~a" test)
+    (let1 sub-result
+        (guard (e [else #f])
+          (load test)
+          #t)
+      (test* #"Sub test ~|test|" #t
+             sub-result)
+      )))
+
 ;; If you don't want `gosh' to exit with nonzero status even if
 ;; the test fails, pass #f to :exit-on-failure.
 (test-end :exit-on-failure #t)
 
-(let ([optional-tests *argv*])
-  (dolist (test optional-tests)
-    (load test)))

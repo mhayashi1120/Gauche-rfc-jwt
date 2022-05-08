@@ -8,6 +8,8 @@
 (use rfc.jwt.ecdsa)
 (test-module 'rfc.jwt.ecdsa)
 
+(use rfc.jwk.ref)
+
 (define (read-json file)
   (with-input-from-file file parse-json))
 
@@ -17,12 +19,21 @@
        [payload (file->string "tests/rfc7515-a-3-payload.json")]
        [privKey (read-ecdsa-private jwk-key)]
        [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
-       )
+       [pubKey (read-ecdsa-public jwk-key)])
 
   (let1 signature (ecdsa-sign "ES256" signingInput privKey)
-    (let* ([pubKey (read-ecdsa-public jwk-key)])
-      (test* #"Verify rfc example signature ~(base64-urlencode signature)" #t
-             (ecdsa-verify? "ES256" signingInput signature pubKey)))))
+    (test* #"Verify rfc example signature ~(base64-urlencode signature)" #t
+           (ecdsa-verify? "ES256" signingInput signature pubKey)))
+
+  (let ([invalid-signatures '(
+                              "A"
+                              ;; ref: http://www.cryptomathic.com/news-events/blog/explaining-the-java-ecdsa-critical-vulnerability
+                              "\x00;" "\x00;\x00;"
+                              )])
+    (dolist (sig invalid-signatures)
+      (test* #"Verify rfc example with invalid sign ~(base64-urlencode sig)" #f
+             (ecdsa-verify? "ES256" signingInput sig pubKey))))
+  )
 
 ;; Import from ruby-jwt (https://github.com/jwt/ruby-jwt)
 
