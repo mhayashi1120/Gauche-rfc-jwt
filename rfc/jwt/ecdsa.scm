@@ -105,7 +105,7 @@
       [else
        (errorf "Not a supported curve ~a" crv)])))
 
-(define (R&S key signature)
+(define (R&S signature)
   (define (->u8vector s :optional (start 0) (end #f))
     (string->u8vector (string-copy s start end)))
   (let1 pos (div (string-length signature) 2)
@@ -122,7 +122,7 @@
          [digest/bin (string->u8vector digest)]
          [x/bin (bignum->u8vector (~ public-key'X))]
          [y/bin (bignum->u8vector (~ public-key'Y))])
-    (receive (r s) (R&S public-key signature)
+    (receive (r s) (R&S signature)
       (do-verify (~ public-key 'CRV)
                  digest/bin r s
                  x/bin y/bin))))
