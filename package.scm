@@ -4,7 +4,7 @@
 
 (define-gauche-package "Gauche-rfc-jwt"
   ;; 
-  :version "0.1.1"
+  :version "0.1.2"
 
   ;; Description of the package.  The first line is used as a short
   ;; summary.
