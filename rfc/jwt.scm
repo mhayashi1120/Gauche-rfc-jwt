@@ -187,6 +187,9 @@
     #"~|sign-target|.~|sign/b64|"))
 
 ;; KEY can be #f if `verify-signature?` keyword is #f
+;; If caller need `kid` in JWT header call with KEY as #f and `:verify-signature?` #f
+;;  then get header (and `kid`) and call again this method with the correct key 
+;;  correspond with `kid` to verify the TOKEN.
 (define (jwt-decode token key
                     :key (verify-signature? #t) (validate-type? #t)
                     ;; This check same as `jwt-verify` procedure's default
