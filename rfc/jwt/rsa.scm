@@ -57,11 +57,13 @@
   (unless (rsa-key? jwk-node)
     (error "Not a valid key `kty` must be \"RSA\"")))
 
+;; ## -> <rsa-private>
 (define (read-rsa-private jwk-node)
   (make <rsa-private>
     :N (bignum-ref jwk-node "n")
     :D (bignum-ref jwk-node "d")))
 
+;; ## -> <rsa-public>
 (define (read-rsa-public jwk-node)
   (make <rsa-public>
     :N (bignum-ref jwk-node "n")
@@ -128,6 +130,7 @@
 ;;; JWT
 ;;;
 
+;; ## -> <boolean>
 (define (rsa-verify? algorithm signing-input sign public-key)
   (let* ([hasher (rsa-hasher algorithm)]
          [M0 (pkcs1-encode hasher signing-input (~ public-key'size))]
@@ -135,6 +138,7 @@
          [M1 (rsa-decrypt C public-key)])
     (equal? M0 M1)))
 
+;; ## -> <string>
 (define (rsa-sign algorithm s private-key)
   (let* ([hasher (rsa-hasher algorithm)]
          [M (pkcs1-encode hasher s (~ private-key'size))]
@@ -142,6 +146,7 @@
          [S (bignum->string C)])
     S))
 
+;; ##
 (define (rsa-hasher algorithm)
   (match algorithm
     ["RS256" <sha256>]
