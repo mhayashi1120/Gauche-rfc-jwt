@@ -10,6 +10,11 @@
 (use rfc.jwk.ref)
 (test-module 'rfc.jwk.ref)
 
+(test* "Byte" "AB CD EF"
+       (bignum->string (string->bignum "AB CD EF")))
+(test* "Multibyte1" "わをん"
+       (bignum->string (string->bignum "わをん")))
+
 (test-end :exit-on-failure #t)
 
 (test-start "rfc.jwt")
@@ -119,6 +124,7 @@
 (test-end :exit-on-failure #t)
 
 (test-start "rfc.jwt.rsa")
+
 (use rfc.jwt.rsa)
 (test-module 'rfc.jwt.rsa)
 
@@ -147,7 +153,5 @@
              sub-result)
       )))
 
-;; If you don't want `gosh' to exit with nonzero status even if
-;; the test fails, pass #f to :exit-on-failure.
 (test-end :exit-on-failure #t)
 
