@@ -79,12 +79,14 @@
   (unless (ecdsa-key? jwk-node)
     (error "Not a valid key `kty` must be \"EC\"")))
 
+;; ## -> <ecdsa-private-key>
 (define (read-ecdsa-private jwk-node)
   (check-jwk-node jwk-node)
   (make <ecdsa-private-key>
     :CRV (assoc-ref jwk-node "crv")
     :D (bignum-ref jwk-node "d")))
 
+;; ## -> <ecdsa-public-key>
 (define (read-ecdsa-public jwk-node)
   (check-jwk-node jwk-node)
   (make <ecdsa-public-key>
@@ -116,6 +118,7 @@
 ;;; JWT
 ;;;
 
+;; ## -> <boolean>
 (define (ecdsa-verify? algorithm signing-input signature public-key)
   (check-acceptable algorithm public-key)
   (let* ([digest (digest-string (~ public-key'hasher) signing-input)]
@@ -140,6 +143,7 @@
         (let* ([dstart (- size vlen)])
           (u8vector-copy! dst dstart src)))])))
 
+;; ## -> <string>
 (define (ecdsa-sign algorithm signing-input private-key)
   (check-acceptable algorithm private-key)
   (let* ([digest (digest-string (~ private-key'hasher) signing-input)]
