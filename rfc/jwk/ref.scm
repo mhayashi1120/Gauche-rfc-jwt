@@ -40,13 +40,17 @@
         [(x . xs)
          (loop xs (logior (ash res 8) x))]))))
 
+(autoload gauche.charconv ces-convert-to)
+
 ;; ## <string> -> <integer>
 (define (string->bignum s)
-  (u8vector->bignum
-   (if (string-incomplete? s)
-     (string->u8vector s)
-     ;;TODO suspicious
-     ($ list->u8vector $ map char->integer $ string->list s))))
+  (define (->u8vector s)
+    (if (string-incomplete? s)
+      (string->u8vector s)
+      ;; Maybe ok... even if non utf-8 environment.
+      (ces-convert-to <u8vector> s "utf-8" "utf-8")))
+
+  ($ u8vector->bignum $ ->u8vector s))
 
 ;; ## <integer> -> <string>
 (define (bignum->string n)
