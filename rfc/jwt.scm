@@ -119,6 +119,8 @@
               (cons (keyword->string k) v)
               res))])))
 
+;; ## Construct JWT header
+;; -> <json>
 (define (construct-jwt-header
          :key (typ "JWT") (cty #f) (alg "HS256")
          :allow-other-keys _other-keys)
@@ -128,6 +130,8 @@
    [alg (cons "alg" alg)]
    [#t @ (other-keys _other-keys)]))
 
+;; ## Construct JWT payload
+;; -> <json>
 (define (construct-jwt-payload
          :key (iss #f) (sub #f) (aud #f)
          (exp #f) (nbf #f) (iat (sys-time)) (jti #f)
@@ -165,17 +169,21 @@
      )))
  
 ;;;
-;;; Encode / Decode (verify)
+;;; Encode / Decode (and verify)
 ;;;
 
-;; HEADER: json-object / STRING
-;; PAYLOAD: json-object / STRING
-;; KEY: Hold key depend on algorithm
+;; ## Encode as JWT
+;; - HEADER: <json> | <string>
+;; - PAYLOAD: <json> | <string>
+;; - KEY: <top> Hold key depend on algorithm.
+;; -> <string>
 (define (jwt-encode header payload key)
   (define (as-json x)
     (cond
      [(string? x) (parse-json-string x)]
-     [(pair? x) x]))
+     [(pair? x) x]
+     [else
+      (error "Not a supported type of json" (class-of x))]))
 
   (let* ([header/json (as-json header)]
          [algorithm (assoc-ref header/json "alg")]
@@ -186,10 +194,14 @@
          [sign/b64 (base64-urlencode sign)])
     #"~|sign-target|.~|sign/b64|"))
 
+;; ## Decode JWT
 ;; KEY can be #f if `verify-signature?` keyword is #f
 ;; If caller need `kid` in JWT header call with KEY as #f and `:verify-signature?` #f
 ;;  then get header (and `kid`) and call again this method with the correct key 
 ;;  correspond with `kid` to verify the TOKEN.
+;; - TOKEN : <string>
+;; - KEY : <top> Key depend on algorithm
+;; -> [HEADER:<json> PAYLOAD:<json>]
 (define (jwt-decode token key
                     :key (verify-signature? #t) (validate-type? #t)
                     ;; This check same as `jwt-verify` procedure's default
@@ -219,6 +231,10 @@
      (errorf "Invalid Json Web Token ~a"
              token)]))
 
+;; ## Verify JWT
+;; - HEADER : <json>
+;; - PAYLOAD : <json>
+;; -> <boolean>
 (define (jwt-verify
          header payload
          :key
