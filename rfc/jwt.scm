@@ -206,6 +206,9 @@
                     :key (verify-signature? #t) (validate-type? #t)
                     ;; This check same as `jwt-verify` procedure's default
                     (verify-payload? #f))
+
+  (assume-type token <string>)
+  
   (match (string-split token ".")
     [(header/b64 payload/b64 sign/b64)
      (let* ([header (decode-part header/b64)]
