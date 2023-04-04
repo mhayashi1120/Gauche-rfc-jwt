@@ -62,7 +62,7 @@
     ["HS256" <sha256>]
     ["HS384" <sha384>]
     ["HS512" <sha512>]
-    [else #f]))
+    [_ #f]))
 
 ;;;
 ;;; none
@@ -86,7 +86,7 @@
      (rsa-sign algorithm target key)]
     [(or "ES256" "ES384" "ES512")
      (ecdsa-sign algorithm target key)]
-    [else
+    [_
      (errorf "Not a supported algorithm ~a" algorithm)]))
 
 (define (verify? algorithm key header/b64 payload/b64 sign)
@@ -100,7 +100,7 @@
        (rsa-verify? algorithm signing-input sign key)]
       [(or "ES256" "ES384" "ES512")
        (ecdsa-verify? algorithm signing-input sign key)]
-      [else
+      [_
        (errorf "Not a supported algorithm ~a" algorithm)])))
 
 ;;;
@@ -167,7 +167,7 @@
      ("iat" ,NumericDate? "NumericDate")
      ("jti" ,string? "String")
      )))
- 
+
 ;;;
 ;;; Encode / Decode (and verify)
 ;;;
@@ -197,7 +197,7 @@
 ;; ## Decode JWT
 ;; KEY can be #f if `verify-signature?` keyword is #f
 ;; If caller need `kid` in JWT header call with KEY as #f and `:verify-signature?` #f
-;;  then get header (and `kid`) and call again this method with the correct key 
+;;  then get header (and `kid`) and call again this method with the correct key
 ;;  correspond with `kid` to verify the TOKEN.
 ;; - TOKEN : <string>
 ;; - KEY : <top> Key depend on algorithm
@@ -208,7 +208,7 @@
                     (verify-payload? #f))
 
   (assume-type token <string>)
-  
+
   (match (string-split token ".")
     [(header/b64 payload/b64 sign/b64)
      (let* ([header (decode-part header/b64)]
@@ -230,7 +230,7 @@
        (when verify-payload?
          (jwt-verify header payload))
        (values header payload))]
-    [else
+    [_
      (errorf "Invalid Json Web Token ~a"
              token)]))
 
@@ -257,7 +257,7 @@
                [(<= p-exp (- now (or exp-leeway global-leeway 0)))])
       (errorf "Already expired at ~a"
               p-exp))
-  
+
     (and-let* ([p-nbf (assoc-ref payload "nbf")]
                [(> p-nbf (+ now (or nbf-leeway global-leeway 0)))])
       (errorf "Must not be before at ~a"

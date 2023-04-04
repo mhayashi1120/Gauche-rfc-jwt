@@ -67,7 +67,7 @@
       [(_ hasher _ size)
        (slot-set! self'hasher hasher)
        (slot-set! self'sign-size size)]
-      [else
+      [_
        (errorf "CurveType ~a not supported" CRV)])))
 
 (define (ecdsa-key? jwk-node)
@@ -104,7 +104,7 @@
        (unless (string=? algo algorithm)
          (errorf "Requested ~a algorithm but not supported with the Curve: ~a"
                  algorithm crv))]
-      [else
+      [_
        (errorf "Not a supported curve ~a" crv)])))
 
 (define (R&S signature)
