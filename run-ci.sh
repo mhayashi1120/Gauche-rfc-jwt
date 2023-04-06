@@ -2,7 +2,7 @@
 
 set -eu
 
-./configure --disable-esdsa
+./configure --disable-ecdsa
 make check
 
 make distclean

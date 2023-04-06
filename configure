@@ -18,10 +18,10 @@
     (cf-subst-prepend 'LDFLAGS arg)))
 
 (cf-arg-enable
- 'esdsa
+ 'ecdsa
  "  \
-  --enable-esdsa          Use ESDSA digest.
-  --disable-esdsa         Do not use ESDSA digest.
+  --enable-ecdsa          Use ECDSA digest.
+  --disable-ecdsa         Do not use ECDSA digest.
 "
  )
 
@@ -52,23 +52,27 @@
 (ensure-subst 'SCM_LIBSSL_DEPENDS)
 (ensure-subst 'TEST_LIBSSL_DEPENDS)
 
-(cond
- [(member (cf-feature-ref 'esdsa) '(#f "yes"))
-  (cf-check-headers '("openssl/conf.h"))
-  (cf-check-headers '("openssl/ec.h"))
+(let1 ecdsa (cf-feature-ref 'ecdsa)
+  (unless ecdsa
+    (cf-check-headers '("openssl/ecdsa.h")
+                      :if-found (^_ (set! ecdsa "yes"))
+                      :if-not-found (^_ (set! ecdsa "no"))))
+  (cond
+   [(string=? ecdsa "yes")
+    (cf-check-headers '("openssl/ecdsa.h"))
 
-  ;; Checking early entry point FN of LIB
+    ;; Checking early entry point FN of LIB
 
-  (unless (cf-package-ref 'libcrypto)
-    (cf-check-lib "crypto" "NCONF_new"))
-  (unless (cf-package-ref 'libssl)
-    (cf-check-lib "ssl" "EC_KEY_new"))
-  (cf-subst-append 'ARCH_LIBSSL_DEPENDS "rfc--jwtec.$(SOEXT)")
-  (cf-subst-append 'SCM_LIBSSL_DEPENDS "$(srcdir)/rfc/jwt/ecdsa.scm")
-  (cf-subst-append 'TEST_LIBSSL_DEPENDS "$(srcdir)/test-ecdsa.scm")
-  (cf-subst 'ECDSA_SCM_BODY (file->string "./rfc/jwt/ecdsa-body.scm"))]
- [else
-  (cf-subst 'ECDSA_SCM_BODY (file->string "./rfc/jwt/ecdsa-void.scm"))])
+    (unless (cf-package-ref 'libcrypto)
+      (cf-check-lib "crypto" "NCONF_new"))
+    (unless (cf-package-ref 'libssl)
+      (cf-check-lib "ssl" "EC_KEY_new"))
+    (cf-subst-append 'ARCH_LIBSSL_DEPENDS "rfc--jwtec.$(SOEXT)")
+    (cf-subst-append 'SCM_LIBSSL_DEPENDS "$(srcdir)/rfc/jwt/ecdsa.scm")
+    (cf-subst-append 'TEST_LIBSSL_DEPENDS "$(srcdir)/test-ecdsa.scm")
+    (cf-subst 'ECDSA_SCM_BODY (file->string "./rfc/jwt/ecdsa-body.scm"))]
+   [else
+    (cf-subst 'ECDSA_SCM_BODY (file->string "./rfc/jwt/ecdsa-void.scm"))]))
 
 ;; Output
 (cf-output-default)

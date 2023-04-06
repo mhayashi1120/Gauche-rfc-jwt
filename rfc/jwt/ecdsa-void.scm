@@ -9,8 +9,8 @@
   )
 (select-module rfc.jwt.ecdsa)
 
-(define (ecdsa-sign algorithm target key)
-  (error "Not supported the algorithm"))
+(define (ecdsa-sign algorithm . _)
+  (error "Not supported the algorithm" algorithm))
 
-(define (ecdsa-verify? algorithm signing-input sign key)
-  (error "Not supported the algorithm"))
+(define (ecdsa-verify? algorithm . _)
+  (error "Not supported the algorithm" algorithm))
