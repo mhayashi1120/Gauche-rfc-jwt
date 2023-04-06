@@ -14,8 +14,8 @@ SCM_DECL_BEGIN
 extern ScmObj doSign(ScmString * curveType, const ScmUVector * DGST, const ScmUVector * PRV);
 
 extern ScmObj doVerify(ScmString * curveType, const ScmUVector *DGST,
-		const ScmUVector *R, const ScmUVector *S,
-		const ScmUVector *X, const ScmUVector *Y);
+                       const ScmUVector *R, const ScmUVector *S,
+                       const ScmUVector *X, const ScmUVector *Y);
 
 /* Epilogue */
 SCM_DECL_END
