@@ -2,6 +2,7 @@
 ;; Configuring Gauche-rfc-jwt
 ;; Run ./configure (or gosh ./configure) to generate Makefiles.
 
+(use file.util)
 (use gauche.mop.singleton)
 (use gauche.configure)
 
@@ -51,7 +52,8 @@
 (ensure-subst 'SCM_LIBSSL_DEPENDS)
 (ensure-subst 'TEST_LIBSSL_DEPENDS)
 
-(when (member (cf-feature-ref 'esdsa) '(#f "yes"))
+(cond
+ [(member (cf-feature-ref 'esdsa) '(#f "yes"))
   (cf-check-headers '("openssl/conf.h"))
   (cf-check-headers '("openssl/ec.h"))
 
@@ -64,10 +66,13 @@
   (cf-subst-append 'ARCH_LIBSSL_DEPENDS "rfc--jwtec.$(SOEXT)")
   (cf-subst-append 'SCM_LIBSSL_DEPENDS "$(srcdir)/rfc/jwt/ecdsa.scm")
   (cf-subst-append 'TEST_LIBSSL_DEPENDS "$(srcdir)/test-ecdsa.scm")
-  )
+  (cf-subst 'ECDSA_SCM_BODY (file->string "./rfc/jwt/ecdsa-body.scm"))]
+ [else
+  (cf-subst 'ECDSA_SCM_BODY (file->string "./rfc/jwt/ecdsa-void.scm"))])
 
 ;; Output
 (cf-output-default)
+(cf-output "./rfc/jwt/ecdsa.scm")
 
 ;; Local variables:
 ;; mode: scheme

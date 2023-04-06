@@ -153,4 +153,3 @@
       (let ([R (maybe-fill (~ private-key'sign-size) r)]
             [S (maybe-fill (~ private-key'sign-size) s)])
       (u8vector->string (u8vector-concatenate (list R S)))))))
-

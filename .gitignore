@@ -1,6 +1,7 @@
+/*.gpd
+/VERSION
+
 *.so
 *.o
 Makefile
-*.gpd
-VERSION
 *.log
