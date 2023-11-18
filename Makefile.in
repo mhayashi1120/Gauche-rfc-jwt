@@ -50,6 +50,8 @@ jwtec_SRCS = $(srcdir)/jwtec.c $(srcdir)/jwteclib.stub
 
 # MY_DEBUGGING = --keep-c-files
 
+TEST_LOG := test.log
+
 all : $(TARGET)
 
 rfc--jwtec.$(SOEXT): $(jwtec_SRCS) jwtec.h
@@ -60,8 +62,8 @@ rfc--jwtec.$(SOEXT): $(jwtec_SRCS) jwtec.h
 	  --local=$(LOCAL_PATHS) --verbose rfc--jwtec $(jwtec_SRCS)
 
 check : all
-	@rm -f test.log
-	$(GOSH) -I. -I$(srcdir) $(srcdir)/test.scm $(TEST_LIBSSL_DEPENDS) > test.log
+	@rm -f $(TEST_LOG)
+	$(GOSH) -I. -I$(srcdir) $(srcdir)/test.scm $(TEST_LIBSSL_DEPENDS) > $(TEST_LOG)
 
 install : all
 	$(INSTALL) -m 444 -T $(GAUCHE_PKGINCDIR) $(HEADERS)
@@ -77,13 +79,17 @@ uninstall :
 
 clean :
 	$(GAUCHE_PACKAGE) compile --clean rfc--jwtec $(jwtec_SRCS)
-	rm -rf core $(TARGET) $(GENERATED) *~ test.log so_locations
+	rm -rf core $(TARGET) $(GENERATED) *~ $(TEST_LOG) so_locations
 
 distclean : clean
 	rm -rf $(CONFIG_GENERATED)
 
 maintainer-clean : clean
 	rm -rf $(CONFIG_GENERATED)  VERSION
+
+validate :
+	@echo "Testing current setup"
+	$(GOSH) $(srcdir)/test.scm >> $(TEST_LOG)
 
 docker-check :
 	./_docker/run-check.sh

@@ -8,4 +8,4 @@ make check
 make distclean
 
 ./configure
-make check
+make check install validate
