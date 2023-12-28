@@ -43,7 +43,7 @@ static ScmObj ECSignatureToVectors(const ECDSA_SIG * signature)
     ScmObj scm_r = readBNToVector(r);
     ScmObj scm_s = readBNToVector(s);
 
-    ScmObj result = Scm_Values2(scm_r, scm_s);
+    ScmObj result = Scm_Cons(scm_r, scm_s);
 
  exit:
 

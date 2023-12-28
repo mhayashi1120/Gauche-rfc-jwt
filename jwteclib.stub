@@ -4,13 +4,15 @@
 
 (declcode
  (.include <openssl/ecdsa.h>)
+ (.include <gauche/vector.h>)
  (.include "jwtec.h")
  )
 
 (define-cproc do-sign (curve-type::<string>
                        body::<u8vector>
-                       d::<u8vector>) :: <string>
-  (return (SCM_STRING (doSign curve-type body d))))
+                       d::<u8vector>) :: (<u8vector> <u8vector>)
+  (let* ([r (doSign curve-type body d)])
+    (return (SCM_U8VECTOR (SCM_CAR r)) (SCM_U8VECTOR (SCM_CDR r)))))
 
 (define-cproc do-verify (curve-type::<string>
                          dgst::<u8vector>
