@@ -8,34 +8,38 @@
       :paths `(,(sys-dirname (current-load-path)))
       :error-if-not-found #f)
 
+(define (errmsg fmt . args)
+  (apply format (current-error-port) fmt args))
+
+(use file.util)
+
 ;; Here you can define handlers of configure arguments by cf-arg-enable
 ;; and cf-arg-with.  Note that --with-local is handled implicitly if you use
 ;; cf-init-gauche-extension.
 
-(define (my-prepend-lib*-ldflags package)
-  (^ [arg]
-    (unless (file-exists? arg)
-      (format #t "~a not found.\n")
-      (exit 1))
-    (cf-subst-prepend 'LDFLAGS arg)))
-
-(cf-arg-enable
- 'esdsa
- "  \
-  --enable-esdsa          Use ESDSA digest.
-  --disable-esdsa         Do not use ESDSA digest.
+($ cf-arg-enable 'ecdsa
+   "  \
+  --enable-ecdsa          Use ECDSA digest.
+  --disable-ecdsa         Do not use ECDSA digest.
 "
- )
+   )
 
-(cf-arg-with
- 'libssl
- "  --with-libssl=PATH      Use Openssl devkit installed under PATH."
- (my-prepend-lib*-ldflags 'libssl))
+($ cf-arg-enable 'werror
+   "  \
+  --enable-werror         Append -Werror option to C compiler
+  --disable-werror        Default behavior
+")
 
-(cf-arg-with
- 'libcrypto
- "  --with-libcrypto=PATH   Use Openssl devkit installed under PATH."
- (my-prepend-lib*-ldflags 'libcrypto))
+(let1 validate!
+    (^ [arg]
+      (unless (file-exists? arg)
+        (errmsg "~a not found.\n" arg)
+        (exit 1)))
+
+  ($ cf-arg-with 'crypto
+     "  --with-crypto=PATH   Use Openssl devkit installed under PATH.
+"
+     validate!))
 
 ;; Initialize configure.  This creates the global context, parses
 ;; command-line args and sets up default values.
@@ -48,29 +52,49 @@
     (cf-subst symbol "")))
 
 ;; These subsutitutions come from environment. Maybe empty.
-(ensure-subst 'LIBS)
-(ensure-subst 'LDFLAGS)
 (ensure-subst 'ARCH_LIBSSL_DEPENDS)
 (ensure-subst 'SCM_LIBSSL_DEPENDS)
 (ensure-subst 'TEST_LIBSSL_DEPENDS)
 
-(when (member (cf-feature-ref 'esdsa) '(#f "yes"))
-  (cf-check-headers '("openssl/conf.h"))
-  (cf-check-headers '("openssl/ec.h"))
+(let ([ecdsa (cf-feature-ref 'ecdsa)]
+      [failed! (^a (errmsg "Not found ~a\n" a)
+                   (exit 1))])
 
-  ;; Checking early entry point FN of LIB
+  (unless ecdsa
+    ($ cf-check-headers '("openssl/evp.h")
+       :if-found (^_ (set! ecdsa #t))
+       :if-not-found (^_ (set! ecdsa "no"))))
 
-  (unless (cf-package-ref 'libcrypto)
-    (cf-check-lib "crypto" "NCONF_new"))
-  (unless (cf-package-ref 'libssl)
-    (cf-check-lib "ssl" "EC_KEY_new"))
-  (cf-subst-append 'ARCH_LIBSSL_DEPENDS "rfc--jwtec.$(SOEXT)")
-  (cf-subst-append 'SCM_LIBSSL_DEPENDS "$(srcdir)/rfc/jwt/ecdsa.scm")
-  (cf-subst-append 'TEST_LIBSSL_DEPENDS "$(srcdir)/test-ecdsa.scm")
-  )
+  (when (equal? ecdsa "yes")
+    ($ cf-check-headers '("openssl/evp.h")
+       :if-not-found failed!)
+    (set! ecdsa #t))
+
+  (cond
+   [(equal? ecdsa "no")
+    (cf-subst 'ECDSA_SCM_BODY (file->string "./rfc/jwt/ecdsa-void.scm"))]
+   [ecdsa
+
+    ;; Checking early entry point FN of LIB
+    (cond
+     [(cf-package-ref 'crypto) =>
+      (^p (cf-subst-prepend 'LIBS #"-l~|p|"))]
+     [else
+      ($ cf-check-lib "crypto" "EVP_PKEY_new"
+         :if-not-found failed!)])
+
+    (cf-subst-append 'ARCH_LIBSSL_DEPENDS "$(srcdir)/$(ECLIB_BIN_NAME)")
+    (cf-subst-append 'SCM_LIBSSL_DEPENDS "$(srcdir)/rfc/jwt/ecdsa.scm")
+    (cf-subst-append 'TEST_LIBSSL_DEPENDS "$(srcdir)/test-ecdsa.scm")
+    (cf-subst 'ECDSA_SCM_BODY (file->string "./rfc/jwt/ecdsa-body.scm"))]))
+
+(and-let* ([werror (cf-feature-ref 'werror)]
+           [(equal? werror "yes")])
+  (cf-subst-append 'CFLAGS "-Werror"))
 
 ;; Output
 (cf-output-default)
+(cf-output "./rfc/jwt/ecdsa.scm")
 
 ;; Local variables:
 ;; mode: scheme

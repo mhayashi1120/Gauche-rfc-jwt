@@ -11,7 +11,6 @@
   (export
    ecdsa-sign ecdsa-verify?
 
-   <ecdsa-private-key> <ecdsa-public-key>
    read-ecdsa-private read-ecdsa-public
    )
   )
@@ -42,19 +41,25 @@
 
 (define-class <ecdsa-key> ()
   (
+   ;; <string>
    (CRV :init-keyword :CRV)
+   ;; <message-digest-algorithm>
    (hasher)
+   ;; <integer>
    (sign-size)
    ))
 
 (define-class <ecdsa-private-key> (<ecdsa-key>)
   (
+   ;; <integer>
    (D :init-keyword :D)
    ))
 
 (define-class <ecdsa-public-key> (<ecdsa-key>)
   (
+   ;; <integer>
    (X :init-keyword :X)
+   ;; <integer>
    (Y :init-keyword :Y)
    ))
 
