@@ -50,11 +50,11 @@
 ;;;
 
 (define (hmac-sign algorithm s key)
-  (let* ([hasher (hmac-hasher algorithm)])
+  (let1 hasher (hmac-hasher algorithm)
     (hmac-digest-string s :key key :hasher hasher)))
 
 (define (hmac-verify? algorithm signing-input sign key)
-  (let* ([verifier (hmac-sign algorithm signing-input key)])
+  (let1 verifier (hmac-sign algorithm signing-input key)
     (equal? sign verifier)))
 
 (define (hmac-hasher algorithm)
