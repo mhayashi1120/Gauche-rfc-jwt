@@ -85,7 +85,7 @@
 
     (cf-subst-append 'ARCH_LIBSSL_DEPENDS "$(srcdir)/$(ECLIB_BIN_NAME)")
     (cf-subst-append 'SCM_LIBSSL_DEPENDS "$(srcdir)/rfc/jwt/ecdsa.scm")
-    (cf-subst-append 'TEST_LIBSSL_DEPENDS "$(srcdir)/test-ecdsa.scm")
+    (cf-subst-append 'TEST_LIBSSL_DEPENDS "$(srcdir)/__tests__/ecdsa-0001.scm")
     (cf-subst 'ECDSA_SCM_BODY (file->string "./rfc/jwt/ecdsa-body.scm"))]))
 
 (and-let* ([werror (cf-feature-ref 'werror)]

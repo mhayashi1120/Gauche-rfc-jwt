@@ -13,10 +13,10 @@
 (define (read-json file)
   (with-input-from-file file parse-json))
 
-(let* ([jwk-key (read-json "tests/rfc7515-a-3-jwkkey.json")]
-       [header (read-json "tests/rfc7515-a-3-header.json")]
+(let* ([jwk-key (read-json "__tests__/data/rfc7515-a-3-jwkkey.json")]
+       [header (read-json "__tests__/data/rfc7515-a-3-header.json")]
        ;; RFC sample contains newline and some spaces.
-       [payload (file->string "tests/rfc7515-a-3-payload.json")]
+       [payload (file->string "__tests__/data/rfc7515-a-3-payload.json")]
        [privKey (read-ecdsa-private jwk-key)]
        [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
        [pubKey (read-ecdsa-public jwk-key)])
@@ -50,7 +50,7 @@
 ;; 2-2. "d", "x", "y" -> above
 ;; Above process is implemented in samples/import-pem
 
-(let* ([jwk-key (read-json "tests/ruby-spec-certs-ec256-private.json")]
+(let* ([jwk-key (read-json "__tests__/data/ruby-spec-certs-ec256-private.json")]
        [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
        [privKey (read-ecdsa-private jwk-key)])
   (let1 signature (ecdsa-sign "ES256" signingInput privKey)
@@ -58,7 +58,7 @@
       (test* #"Verify ruby-cert ec256 signature ~(base64-urlencode signature)" #t
              (ecdsa-verify? "ES256" signingInput signature pubKey)))))
 
-(let* ([jwk-key (read-json "tests/ruby-spec-certs-ec384-private.json")]
+(let* ([jwk-key (read-json "__tests__/data/ruby-spec-certs-ec384-private.json")]
        [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
        [privKey (read-ecdsa-private jwk-key)])
   (let1 signature (ecdsa-sign "ES384" signingInput privKey)
@@ -66,7 +66,7 @@
       (test* #"Verify ruby-cert ec384 signature ~(base64-urlencode signature)" #t
              (ecdsa-verify? "ES384" signingInput signature pubKey)))))
 
-(let* ([jwk-key (read-json "tests/ruby-spec-certs-ec512-private.json")]
+(let* ([jwk-key (read-json "__tests__/data/ruby-spec-certs-ec512-private.json")]
        [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
        [privKey (read-ecdsa-private jwk-key)])
   (let1 signature (ecdsa-sign "ES512" signingInput privKey)

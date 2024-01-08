@@ -6,7 +6,10 @@
 (use rfc.json)
 (use gauche.test)
 
-(test-start "rfc.jwk")
+(test-start "Gauche-rfc-jwt")
+
+(test-section "rfc.jwk.ref")
+
 (use rfc.jwk.ref)
 (test-module 'rfc.jwk.ref)
 
@@ -15,9 +18,8 @@
 (test* "Multibyte1" "わをん"
        (bignum->string (string->bignum "わをん")))
 
-(test-end :exit-on-failure #t)
+(test-section "rfc.jwt")
 
-(test-start "rfc.jwt")
 (use rfc.jwt)
 (test-module 'rfc.jwt)
 
@@ -121,9 +123,7 @@
         :now 1587100002
         ))
 
-(test-end :exit-on-failure #t)
-
-(test-start "rfc.jwt.rsa")
+(test-section "rfc.jwt.rsa")
 
 (use rfc.jwt.rsa)
 (test-module 'rfc.jwt.rsa)
@@ -131,16 +131,16 @@
 (define (read-json file)
   (with-input-from-file file parse-json))
 
-(let* ([jwk-key (read-json "tests/rfc7515-a-2-private-key.json")]
-       [header (read-json "tests/rfc7515-a-2-header.json")]
+(let* ([jwk-key (read-json "__tests__/data/rfc7515-a-2-private-key.json")]
+       [header (read-json "__tests__/data/rfc7515-a-2-header.json")]
        ;; RFC sample contains newline and some spaces.
-       [payload (file->string "tests/rfc7515-a-2-payload.json")]
+       [payload (file->string "__tests__/data/rfc7515-a-2-payload.json")]
        [privKey (read-rsa-private jwk-key)]
        [token (jwt-encode header payload privKey)])
   (test* "Described in RFC"
-         (file->string "tests/rfc7515-a-2-result.txt") token))
+         (file->string "__tests__/data/rfc7515-a-2-result.txt") token))
 
-(test-section "Sub tests")
+(test-section "Some optional tests")
 
 (let ([optional-tests *argv*])
   (dolist (test optional-tests)
@@ -154,4 +154,3 @@
       )))
 
 (test-end :exit-on-failure #t)
-
