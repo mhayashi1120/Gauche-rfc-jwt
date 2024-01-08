@@ -4,16 +4,52 @@
 
 /* Ref: */
 /* https://www.jnsa.org/seminar/pki-day/2011/data/02_kanaoka.pdf */
+/* https://github.com/OpenSC/OpenSC/pull/2438 */
 
-#include <openssl/ecdsa.h>
+/* About EC Public Key:  */
+/* https://tex2e.github.io/rfc-translater/html/rfc5480.html */
+/* https://www.secg.org/sec1-v2.pdf */
+
+#include <openssl/evp.h>
+#include <openssl/ec.h>
 #include <openssl/bn.h>
-#include <openssl/objects.h>
+#include <openssl/core_names.h>
+#include <openssl/param_build.h>
 
 #include "jwtec.h"
 
-static BIGNUM * ScmUVectorToBignum(const ScmUVector * v)
+typedef struct binary_st
 {
-    BIGNUM * bn = BN_new();
+    unsigned char * data;
+    size_t size;
+} Binary;
+
+static void purgeBinary(Binary * b)
+{
+    if (b == NULL) {
+        return;
+    }
+
+    if (b->data != NULL) {
+        b->data = NULL;
+        b->size = 0;
+    }
+}
+
+static size_t signatureSize(size_t digestLength)
+{
+    /* TODO FIXME not enough understand EC algorithm yet, but maybe enough size */
+    return digestLength * 4;
+}
+
+static BIGNUM * ScmUVectorToBignum(const ScmUVector * v, BN_CTX * ctx)
+{
+    BIGNUM * bn = ctx != NULL ? BN_CTX_get(ctx) : BN_new();
+
+    if (bn == NULL) {
+        return NULL;
+    }
+
     const unsigned char *body = (unsigned char*)SCM_UVECTOR_ELEMENTS(v);
     const int len = SCM_UVECTOR_SIZE(v);
 
@@ -22,165 +58,380 @@ static BIGNUM * ScmUVectorToBignum(const ScmUVector * v)
     return bn;
 }
 
-static ScmObj readBNToVector(BIGNUM * bn)
+static ScmObj bignumToVector(BIGNUM * bn)
 {
     int numBytes = BN_num_bytes(bn);
-    char * array =  SCM_NEW_ATOMIC_ARRAY(char, numBytes);
+    unsigned char * array =  (unsigned char *)SCM_NEW_ATOMIC_ARRAY(char, numBytes);
     int size = BN_bn2bin(bn, array);
 
-    /* Some of misunderstanding or not. */
+    /* Check misunderstanding or not. */
     SCM_ASSERT(numBytes == size);
 
     return Scm_MakeUVector(SCM_CLASS_U8VECTOR, size, array);
 }
 
-static ScmObj ECSignatureToVectors(const ECDSA_SIG * signature)
+static ScmObj signatureToPairs(const ECDSA_SIG * signature)
 {
     BIGNUM * r = NULL, * s = NULL;
-    
+    ScmObj result = NULL;
+
     ECDSA_SIG_get0(signature, (const BIGNUM**)&r, (const BIGNUM**)&s);
-    
-    ScmObj scm_r = readBNToVector(r);
-    ScmObj scm_s = readBNToVector(s);
 
-    ScmObj result = Scm_Values2(scm_r, scm_s);
+    ScmObj scm_r = bignumToVector(r);
+    ScmObj scm_s = bignumToVector(s);
 
-exit:
+    result = Scm_Cons(scm_r, scm_s);
+
+ exit:
 
     return result;
 }
 
-static EC_KEY * ensureECKeyByCurveType(ScmString * curveType)
+static EVP_PKEY * makeKey()
 {
-    const char * curve_type = Scm_GetStringConst(curveType);
-    int nid = EC_curve_nist2nid(curve_type);
+    EVP_PKEY * key = EVP_PKEY_new();
 
-    if (nid == NID_undef) {
-	nid = OBJ_sn2nid(curve_type);
+    if (key == NULL) {
+        return NULL;
     }
 
-    if (nid <= 0) {
-	return NULL;
-    }
+    EVP_PKEY_set_type(key, EVP_PKEY_EC);
 
-    return EC_KEY_new_by_curve_name(nid);
+    return key;
 }
 
-
-ScmObj doVerify(ScmString * curveType, const ScmUVector *DGST,
-		const ScmUVector *R, const ScmUVector *S,
-		const ScmUVector *X, const ScmUVector *Y)
+static EVP_PKEY_CTX * loadPrivateKey(BIGNUM * priv, const char * curve)
 {
-    BIGNUM * x = NULL, * y = NULL, * r = NULL, * s = NULL;
-    EC_KEY * pubKey = NULL;
-    char * errorMsg = NULL;
-    ECDSA_SIG * signature = NULL;
-    ScmObj result = NULL;
+    EVP_PKEY * key = NULL;
+    EVP_PKEY_CTX * ctx = NULL;
+    OSSL_PARAM_BLD * builder = NULL;
+    OSSL_PARAM * params = NULL;
 
-    x = ScmUVectorToBignum(X);
-    y = ScmUVectorToBignum(Y);
+    key = makeKey();
+    builder = OSSL_PARAM_BLD_new();
 
-    pubKey = ensureECKeyByCurveType(curveType);
-
-    if (pubKey == NULL) {
-	errorMsg = "Key construction failed.";
-	goto exit;
+    if (key == NULL || builder == NULL){
+        goto fail;
     }
 
-    /* x, y seems non changed const values */
-    if (! EC_KEY_set_public_key_affine_coordinates(pubKey, x, y)) {
-	errorMsg = "Failed to set public key.";
-	goto exit;
+    if (! (OSSL_PARAM_BLD_push_BN(builder, OSSL_PKEY_PARAM_PRIV_KEY, priv) &&
+           OSSL_PARAM_BLD_push_utf8_string(builder, OSSL_PKEY_PARAM_GROUP_NAME, curve, 0))) {
+        goto fail;
+    }
+
+    params = OSSL_PARAM_BLD_to_param(builder);
+    ctx = EVP_PKEY_CTX_new(key, NULL);
+
+    if (! (EVP_PKEY_fromdata_init(ctx) &&
+           EVP_PKEY_fromdata(ctx, &key, EVP_PKEY_KEYPAIR, params))) {
+        goto fail;
+    }
+
+    goto exit;
+
+ fail:
+    if (ctx != NULL) EVP_PKEY_CTX_free(ctx);
+
+ exit:
+    if (builder != NULL) OSSL_PARAM_BLD_free(builder);
+    if (params != NULL) OSSL_PARAM_free(params);
+
+    return ctx;
+}
+
+/* ref: https://www.secg.org/sec1-v2.pdf */
+/* 2.3.3 Elliptic-Curve-Point-to-Octet-String Conversion */
+static Binary * publicKeyOctetString(const char * curve, const BIGNUM * X, const BIGNUM * Y, BN_CTX * ctx)
+{
+    const int nid = EC_curve_nist2nid(curve);
+    Binary * store = NULL;
+    EC_GROUP * group = NULL;
+    EC_POINT * point = NULL;
+    unsigned char * octetKey = NULL;
+
+    if (EVP_PKEY_NONE == nid) {
+        return NULL;
+    }
+
+    group = EC_GROUP_new_by_curve_name(nid);
+
+    if (group == NULL) {
+        goto fail;
+    }
+
+    point = EC_POINT_new(group);
+
+    if (point == NULL) {
+        goto fail;
+    }
+
+    if (! EC_POINT_set_affine_coordinates(group, point, X, Y, ctx)) {
+        goto fail;
+    }
+
+    /* TODO Maybe enough size here */
+    int len = BN_num_bytes(X) + BN_num_bytes(Y) + 1;
+
+    octetKey = SCM_MALLOC(len);
+
+    size_t size;
+
+    if ((size = EC_POINT_point2oct(group, point,
+                                   POINT_CONVERSION_UNCOMPRESSED,
+                                   octetKey, len, ctx)) <= 0) {
+        goto fail;
+    }
+
+    store = SCM_MALLOC(sizeof(Binary));
+
+    store->data = octetKey;
+    store->size = size;
+
+    goto exit;
+
+ fail:
+    store = NULL;
+
+ exit:
+    if (group != NULL) EC_GROUP_free(group);
+    if (point != NULL) EC_POINT_free(point);
+
+    return store;
+}
+
+static EVP_PKEY_CTX * loadPublicKey(BIGNUM * X, BIGNUM * Y, const char * curve, BN_CTX * bnctx)
+{
+    OSSL_PARAM_BLD * builder = NULL;
+    OSSL_PARAM * params = NULL;
+    EVP_PKEY_CTX * ctx = NULL;
+    EVP_PKEY * key = NULL;
+    Binary * octetKey = NULL;
+
+    key = makeKey();
+    builder = OSSL_PARAM_BLD_new();
+
+    if (key == NULL || builder == NULL) {
+        goto fail;
+    }
+
+    octetKey = publicKeyOctetString(curve, X, Y, bnctx);
+
+    if (octetKey == NULL) {
+        goto fail;
+    }
+
+    if (! (OSSL_PARAM_BLD_push_octet_string(builder, OSSL_PKEY_PARAM_PUB_KEY, octetKey->data, octetKey->size) &&
+           OSSL_PARAM_BLD_push_utf8_string(builder, OSSL_PKEY_PARAM_GROUP_NAME, curve, 0))) {
+        goto fail;
+    }
+
+    params = OSSL_PARAM_BLD_to_param(builder);
+    ctx = EVP_PKEY_CTX_new(key, NULL);
+
+    if (! (EVP_PKEY_fromdata_init(ctx) &&
+           EVP_PKEY_fromdata(ctx, &key, EVP_PKEY_PUBLIC_KEY, params))) {
+        goto fail;
+    }
+
+    goto exit;
+
+ fail:
+    if (ctx != NULL) EVP_PKEY_CTX_free(ctx);
+    ctx = NULL;
+
+ exit:
+    if (octetKey != NULL) purgeBinary(octetKey);
+    if (builder != NULL) OSSL_PARAM_BLD_free(builder);
+    if (params != NULL) OSSL_PARAM_free(params);
+
+    return ctx;
+}
+
+/* -> VERIFIED?:<boolean> */
+ScmObj doVerify(ScmString *curveType, const ScmUVector *DGST,
+                const ScmUVector *R, const ScmUVector *S,
+                const ScmUVector *X, const ScmUVector *Y)
+{
+    char * errorMsg = NULL;
+    ScmObj result = NULL;
+    BIGNUM * pubX = NULL, * pubY = NULL, * r = NULL, * s = NULL;
+    EVP_MD_CTX * mdctx = NULL;
+    ECDSA_SIG * signature = NULL;
+    BN_CTX * bnctx = BN_CTX_new();
+
+    const char * curve = Scm_GetStringConst(curveType);
+    EVP_PKEY_CTX * pubCtx = NULL;
+
+    BN_CTX_start(bnctx);
+
+    pubX = ScmUVectorToBignum(X, bnctx);
+    pubY = ScmUVectorToBignum(Y, bnctx);
+
+    if (pubX == NULL || pubY == NULL) {
+        errorMsg = "Failed construct bignum X/Y";
+        goto exit;
+    }
+
+    if ((pubCtx = loadPublicKey(pubX, pubY, curve, bnctx)) == NULL) {
+        errorMsg = "Failed construct public key";
+        goto exit;
     }
 
     signature = ECDSA_SIG_new();
 
-    r = ScmUVectorToBignum(R);
-    s = ScmUVectorToBignum(S);
+    /* Not BN_CTX here since pass to ECDSA_SIG_set0 `set0` method */
+    /* See man `crypto(7ssl)` `LIBRARY CONVENTIONS` section */
+    r = ScmUVectorToBignum(R, NULL);
+    s = ScmUVectorToBignum(S, NULL);
+
+    if (signature == NULL || r == NULL || s == NULL) {
+        errorMsg = "Failed construct signature.";
+        goto exit;
+    }
 
     if (!ECDSA_SIG_set0(signature, r, s)) {
-	errorMsg = "Failed to set signature.";
-	goto exit;
+        errorMsg = "Failed while set signature.";
+        goto exit;
     }
 
-    r = NULL, s = NULL;
-
-    const char * dgst = (char*)SCM_UVECTOR_ELEMENTS(DGST);
+    const unsigned char * dgst = (unsigned char*)SCM_UVECTOR_ELEMENTS(DGST);
     const int dgstlen = SCM_UVECTOR_SIZE(DGST);
-    const int verifyResult = ECDSA_do_verify(dgst, dgstlen, signature, pubKey);
-    
-    if (! verifyResult) {
-	result = SCM_FALSE;
-	goto exit;
+
+    if ((mdctx = EVP_MD_CTX_new()) == NULL) {
+        errorMsg = "Failed start digest context.";
+        goto exit;
     }
-    
-    result = SCM_TRUE;
 
-exit:
-    if (pubKey != NULL) EC_KEY_free(pubKey);
-    if (x != NULL) BN_free(x);
-    if (y != NULL) BN_free(y);
+    const unsigned char * sigtop = SCM_MALLOC(signatureSize(dgstlen));
+    unsigned char * sig = (unsigned char *)sigtop;
+    int siglen = i2d_ECDSA_SIG(signature, &sig);
 
-    if (r != NULL) BN_free(r);
-    if (s != NULL) BN_free(s);
+    if (siglen < 0) {
+        errorMsg = "Failed convert ECDSA signature";
+        goto exit;
+    }
+
+    EVP_MD_CTX_set_pkey_ctx(mdctx, pubCtx);
+    EVP_PKEY * pkey = EVP_PKEY_CTX_get0_pkey(pubCtx);
+
+    if (! EVP_DigestVerifyInit(mdctx, &pubCtx, NULL, NULL, pkey)) {
+        errorMsg = "Failed digest verify init";
+        goto exit;
+    }
+
+    /* `sig` point to next of the buffer */
+    SCM_ASSERT(sigtop + siglen == sig);
+
+    if (EVP_DigestVerify(mdctx, sigtop, siglen, dgst, dgstlen) == 1) {
+        result = SCM_TRUE;
+    } else {
+        result = SCM_FALSE;
+    }
+
+ exit:
+    if (mdctx != NULL) EVP_MD_CTX_free(mdctx);
     if (signature != NULL) ECDSA_SIG_free(signature);
 
-    if (errorMsg != NULL) {
-	Scm_Error(errorMsg);
+    if (bnctx != NULL) {
+        BN_CTX_end(bnctx);
+        BN_CTX_free(bnctx);
     }
+
+    if (errorMsg != NULL) {
+        Scm_Error(errorMsg);
+    }
+
+    SCM_ASSERT(result != NULL);
 
     return result;
 }
 
 /* curveType: NIST / SN */
-/* Return: R and S signed values as <u8vector>. */
-ScmObj doSign(ScmString * curveType, const ScmUVector * DGST, const ScmUVector * PRV)
+/* -> (R:<u8vector> . S:<u8vector>) */
+ScmObj doSign(ScmString *curveType, const ScmUVector *DGST, const ScmUVector *PRV)
 {
     char * errorMsg = NULL;
-    EC_KEY * privKey = NULL;
+    ScmObj result = NULL;
     BIGNUM * prv = NULL;
     ECDSA_SIG * signature = NULL;
+    EVP_MD_CTX * mdctx = NULL;
+    unsigned char * sig = NULL;
+    BN_CTX * bnctx = BN_CTX_new();
 
-    privKey = ensureECKeyByCurveType(curveType);
+    const char * curve = Scm_GetStringConst(curveType);
+    EVP_PKEY_CTX * privCtx = NULL;
 
-    if (privKey == NULL) {
-	errorMsg = "Key construction failed.";
-	goto exit;
+    BN_CTX_start(bnctx);
+
+    if ((prv = ScmUVectorToBignum(PRV, bnctx)) == NULL) {
+        errorMsg = "Failed construct bignum PRV";
+        goto exit;
     }
 
-    /* EC_KEY_set_asn1_flag(privKey, OPENSSL_EC_NAMED_CURVE); */
-    /* EC_KEY_set_conv_form(privKey, POINT_CONVERSION_UNCOMPRESSED); */
-
-    prv = ScmUVectorToBignum(PRV);
-
-    if (! EC_KEY_set_private_key(privKey, prv)) {
-	errorMsg = "Failed to set private key";
-	goto exit;
+    if ((privCtx = loadPrivateKey(prv, curve)) == NULL) {
+        errorMsg = "Key construction failed.";
+        goto exit;
     }
 
-    const char * dgst = (char *)SCM_UVECTOR_ELEMENTS(DGST);
+    const unsigned char * dgst = (unsigned char *)SCM_UVECTOR_ELEMENTS(DGST);
     const int dgstlen = SCM_UVECTOR_SIZE(DGST);
 
-    signature = ECDSA_do_sign(dgst, dgstlen, privKey);
-
-    if (signature == NULL) {
-	errorMsg = "Failed to sign by private key";
-	goto exit;
+    if ((mdctx = EVP_MD_CTX_new()) == NULL) {
+        errorMsg = "Failed start digest context.";
+        goto exit;
     }
 
-    ScmObj result = ECSignatureToVectors(signature);
+    sig = SCM_MALLOC(signatureSize(dgstlen));
+    size_t siglen;
 
-exit:
-    if (privKey != NULL) EC_KEY_free(privKey);
-    if (prv != NULL) BN_free(prv);
+    EVP_MD_CTX_set_pkey_ctx(mdctx, privCtx);
+    EVP_PKEY * pkey = EVP_PKEY_CTX_get0_pkey(privCtx);
+
+    if (! EVP_DigestSignInit(mdctx, NULL, NULL, NULL, pkey)) {
+        errorMsg = "Failed digest sign init";
+        goto exit;
+    }
+
+    if (! EVP_DigestSign(mdctx, sig, &siglen, dgst, dgstlen)) {
+        errorMsg = "Failed to sign by private key";
+        goto exit;
+    }
+
+    if ((signature = ECDSA_SIG_new()) == NULL) {
+        errorMsg = "Failed construct ECDSA signature";
+        goto exit;
+    }
+
+    if (d2i_ECDSA_SIG(&signature, (const unsigned char**)&sig, siglen) == NULL) {
+        errorMsg = "Failed convert signature";
+        goto exit;
+    }
+
+    result = signatureToPairs(signature);
+
+    if (result == NULL) {
+        errorMsg = "Failed construct signature";
+        goto exit;
+    }
+
+ exit:
+    if (mdctx != NULL) EVP_MD_CTX_free(mdctx);
     if (signature != NULL) ECDSA_SIG_free(signature);
 
-    if (errorMsg != NULL ) {
-	Scm_Error(errorMsg);
+    if (bnctx != NULL) {
+        BN_CTX_end(bnctx);
+        BN_CTX_free(bnctx);
     }
+
+    if (errorMsg != NULL) {
+        Scm_Error(errorMsg);
+    }
+
+    SCM_ASSERT(result != NULL);
 
     return result;
 }
+
 
 /*
  * Module initialization function.
@@ -192,7 +443,7 @@ void Scm_Init_rfc__jwtec(void)
     ScmModule *mod;
 
     /* Register this DSO to Gauche */
-    SCM_INIT_EXTENSION(jwtec);
+    SCM_INIT_EXTENSION(rfc__jwtec);
 
     /* Create the module if it doesn't exist yet. */
     mod = SCM_MODULE(SCM_FIND_MODULE("rfc.jwt.ecdsa", TRUE));
