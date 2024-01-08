@@ -1,11 +1,12 @@
+(use gauche.test)
+
+(test-section "rfc.jwt.ecdsa")
 
 (use util.match)
 (use file.util)
 (use rfc.json)
-(use gauche.test)
-
-(test-start "rfc.jwt.ecdsa")
 (use rfc.jwt.ecdsa)
+
 (test-module 'rfc.jwt.ecdsa)
 
 (use rfc.jwk.ref)
@@ -17,6 +18,27 @@
        [header (read-json "__tests__/data/rfc7515-a-3-header.json")]
        ;; RFC sample contains newline and some spaces.
        [payload (file->string "__tests__/data/rfc7515-a-3-payload.json")]
+       [privKey (read-ecdsa-private jwk-key)]
+       [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
+       [pubKey (read-ecdsa-public jwk-key)])
+
+  (let1 signature (ecdsa-sign "ES256" signingInput privKey)
+    (test* #"Verify rfc example signature ~(base64-urlencode signature)" #t
+           (ecdsa-verify? "ES256" signingInput signature pubKey)))
+
+  (let ([invalid-signatures '(
+                              "A"
+                              ;; ref: http://www.cryptomathic.com/news-events/blog/explaining-the-java-ecdsa-critical-vulnerability
+                              "\x00;" "\x00;\x00;"
+                              )])
+    (dolist (sig invalid-signatures)
+      (test* #"Verify rfc example with invalid sign ~(base64-urlencode sig)" #f
+             (ecdsa-verify? "ES256" signingInput sig pubKey))))
+  )
+
+;; Extra EC test for openssl Sample key
+(let* ([jwk-key (read-json "__tests__/data/openssl-sample-jwkkey.json")]
+       [header (read-json "__tests__/data/rfc7515-a-3-header.json")]
        [privKey (read-ecdsa-private jwk-key)]
        [signingInput "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"]
        [pubKey (read-ecdsa-public jwk-key)])
@@ -73,7 +95,3 @@
     (let* ([pubKey (read-ecdsa-public jwk-key)])
       (test* #"Verify ruby-cert ec512 signature ~(base64-urlencode signature)" #t
              (ecdsa-verify? "ES512" signingInput signature pubKey)))))
-
-;; If you don't want `gosh' to exit with nonzero status even if
-;; the test fails, pass #f to :exit-on-failure.
-(test-end :exit-on-failure #t)
