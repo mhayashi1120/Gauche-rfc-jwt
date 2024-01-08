@@ -1,6 +1,9 @@
+/*.gpd
+/VERSION
+
 *.so
 *.o
 Makefile
-*.gpd
-VERSION
 *.log
+
+/rfc/jwt/ecdsa.scm
