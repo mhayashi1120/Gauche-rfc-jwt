@@ -1,5 +1,7 @@
 # Gauche-rfc-jwt
 
+[![CI](https://github.com/mhayashi1120/Gauche-rfc-jwt/actions/workflows/build.yml/badge.svg)](https://github.com/mhayashi1120/Gauche-rfc-jwt/actions/workflows/build.yml)
+
 Support RFC7519 (JWT)
 
 - HS256, HS384, HS512
