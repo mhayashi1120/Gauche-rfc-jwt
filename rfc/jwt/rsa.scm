@@ -9,7 +9,6 @@
   (use util.match)
   (use rfc.jwk.ref)
   (export
-   <rsa-private> <rsa-public>
    read-rsa-private read-rsa-public
 
    rsa-hasher rsa-verify? rsa-sign)
@@ -26,17 +25,21 @@
 
 (define-class <rsa-key> ()
   (
+   ;; <integer>
    (N :init-keyword :N)
+   ;; <integer>
    (size)
    ))
 
 (define-class <rsa-public> (<rsa-key>)
   (
+   ;; <integer>
    (E :init-keyword :E :getter rsa-exponent)
    ))
 
 (define-class <rsa-private> (<rsa-key>)
   (
+   ;; <integer>
    (D :init-keyword :D :getter rsa-exponent)
    ))
 
@@ -56,18 +59,6 @@
 (define (check-jwk-node jwk-node)
   (unless (rsa-key? jwk-node)
     (error "Not a valid key `kty` must be \"RSA\"")))
-
-;; ## -> <rsa-private>
-(define (read-rsa-private jwk-node)
-  (make <rsa-private>
-    :N (bignum-ref jwk-node "n")
-    :D (bignum-ref jwk-node "d")))
-
-;; ## -> <rsa-public>
-(define (read-rsa-public jwk-node)
-  (make <rsa-public>
-    :N (bignum-ref jwk-node "n")
-    :E (bignum-ref jwk-node "e")))
 
 (define (compute-keysize N)
   (ceiling->exact (log (+ N 1) 256)))
@@ -127,7 +118,23 @@
   (expt-mod C (rsa-exponent key) (~ key'N)))
 
 ;;;
-;;; JWT
+;;; # JWK API
+;;;
+
+;; ## -> <rsa-private>
+(define (read-rsa-private jwk-node)
+  (make <rsa-private>
+    :N (bignum-ref jwk-node "n")
+    :D (bignum-ref jwk-node "d")))
+
+;; ## -> <rsa-public>
+(define (read-rsa-public jwk-node)
+  (make <rsa-public>
+    :N (bignum-ref jwk-node "n")
+    :E (bignum-ref jwk-node "e")))
+
+;;;
+;;; # JWT API
 ;;;
 
 ;; ## -> <boolean>

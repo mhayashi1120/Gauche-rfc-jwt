@@ -84,21 +84,6 @@
   (unless (ecdsa-key? jwk-node)
     (error "Not a valid key `kty` must be \"EC\"")))
 
-;; ## -> <ecdsa-private-key>
-(define (read-ecdsa-private jwk-node)
-  (check-jwk-node jwk-node)
-  (make <ecdsa-private-key>
-    :CRV (assoc-ref jwk-node "crv")
-    :D (bignum-ref jwk-node "d")))
-
-;; ## -> <ecdsa-public-key>
-(define (read-ecdsa-public jwk-node)
-  (check-jwk-node jwk-node)
-  (make <ecdsa-public-key>
-    :CRV (assoc-ref jwk-node "crv")
-    :X (bignum-ref jwk-node "x")
-    :Y (bignum-ref jwk-node "y")))
-
 (define (check-acceptable algorithm key)
   (let1 crv (~ key'CRV)
     (match (find-keyparameter crv)
@@ -119,8 +104,40 @@
     (values (->u8vector signature 0 pos)
             (->u8vector signature pos))))
 
+;; To concat R and S with same octet size.
+(define (%maybe-fill size src)
+  (let1 vlen (u8vector-length src)
+    (cond
+     [(< size vlen)
+      (error "Assert")]
+     [(= vlen size)
+      src]
+     [else
+      (rlet1 dst (make-u8vector size 0)
+        (let* ([dstart (- size vlen)])
+          (u8vector-copy! dst dstart src)))])))
+
 ;;;
-;;; JWT
+;;; # JWK API
+;;;
+
+;; ## -> <ecdsa-private-key>
+(define (read-ecdsa-private jwk-node)
+  (check-jwk-node jwk-node)
+  (make <ecdsa-private-key>
+    :CRV (assoc-ref jwk-node "crv")
+    :D (bignum-ref jwk-node "d")))
+
+;; ## -> <ecdsa-public-key>
+(define (read-ecdsa-public jwk-node)
+  (check-jwk-node jwk-node)
+  (make <ecdsa-public-key>
+    :CRV (assoc-ref jwk-node "crv")
+    :X (bignum-ref jwk-node "x")
+    :Y (bignum-ref jwk-node "y")))
+
+;;;
+;;; # JWT API
 ;;;
 
 ;; ## -> <boolean>
@@ -135,19 +152,6 @@
                  digest/bin r s
                  x/bin y/bin))))
 
-;; To concat R and S with same octet size.
-(define (maybe-fill size src)
-  (let1 vlen (u8vector-length src)
-    (cond
-     [(< size vlen)
-      (error "Assert")]
-     [(= vlen size)
-      src]
-     [else
-      (rlet1 dst (make-u8vector size 0)
-        (let* ([dstart (- size vlen)])
-          (u8vector-copy! dst dstart src)))])))
-
 ;; ## -> <string>
 (define (ecdsa-sign algorithm signing-input private-key)
   (check-acceptable algorithm private-key)
@@ -155,6 +159,6 @@
          [digest/bin (string->u8vector digest)]
          [d/bin (bignum->u8vector (~ private-key'D))])
     (receive (r s) (do-sign (~ private-key'CRV) digest/bin d/bin)
-      (let ([R (maybe-fill (~ private-key'sign-size) r)]
-            [S (maybe-fill (~ private-key'sign-size) s)])
+      (let ([R (%maybe-fill (~ private-key'sign-size) r)]
+            [S (%maybe-fill (~ private-key'sign-size) s)])
       (u8vector->string (u8vector-concatenate (list R S)))))))
