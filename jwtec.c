@@ -247,6 +247,92 @@ static EVP_PKEY_CTX * loadPublicKey(BIGNUM * X, BIGNUM * Y, const char * curve, 
     return ctx;
 }
 
+/* curveType: NIST / SN */
+/* -> (R:<u8vector> . S:<u8vector>) */
+ScmObj doSign(ScmString *curveType, const ScmUVector *DGST, const ScmUVector *PRV)
+{
+    char * errorMsg = NULL;
+    ScmObj result = NULL;
+    BIGNUM * prv = NULL;
+    ECDSA_SIG * signature = NULL;
+    EVP_MD_CTX * mdctx = NULL;
+    unsigned char * sig = NULL;
+    BN_CTX * bnctx = BN_CTX_new();
+
+    const char * curve = Scm_GetStringConst(curveType);
+    EVP_PKEY_CTX * privCtx = NULL;
+
+    BN_CTX_start(bnctx);
+
+    if ((prv = ScmUVectorToBignum(PRV, bnctx)) == NULL) {
+        errorMsg = "Failed construct bignum PRV";
+        goto exit;
+    }
+
+    if ((privCtx = loadPrivateKey(prv, curve)) == NULL) {
+        errorMsg = "Key construction failed.";
+        goto exit;
+    }
+
+    const unsigned char * dgst = (unsigned char *)SCM_UVECTOR_ELEMENTS(DGST);
+    const int dgstlen = SCM_UVECTOR_SIZE(DGST);
+
+    if ((mdctx = EVP_MD_CTX_new()) == NULL) {
+        errorMsg = "Failed start digest context.";
+        goto exit;
+    }
+
+    sig = SCM_MALLOC(signatureSize(dgstlen));
+    size_t siglen;
+
+    EVP_MD_CTX_set_pkey_ctx(mdctx, privCtx);
+    EVP_PKEY * pkey = EVP_PKEY_CTX_get0_pkey(privCtx);
+
+    if (! EVP_DigestSignInit(mdctx, NULL, NULL, NULL, pkey)) {
+        errorMsg = "Failed digest sign init";
+        goto exit;
+    }
+
+    if (! EVP_DigestSign(mdctx, sig, &siglen, dgst, dgstlen)) {
+        errorMsg = "Failed to sign by private key";
+        goto exit;
+    }
+
+    if ((signature = ECDSA_SIG_new()) == NULL) {
+        errorMsg = "Failed construct ECDSA signature";
+        goto exit;
+    }
+
+    if (d2i_ECDSA_SIG(&signature, (const unsigned char**)&sig, siglen) == NULL) {
+        errorMsg = "Failed convert signature";
+        goto exit;
+    }
+
+    result = signatureToPairs(signature);
+
+    if (result == NULL) {
+        errorMsg = "Failed construct signature";
+        goto exit;
+    }
+
+ exit:
+    if (mdctx != NULL) EVP_MD_CTX_free(mdctx);
+    if (signature != NULL) ECDSA_SIG_free(signature);
+
+    if (bnctx != NULL) {
+        BN_CTX_end(bnctx);
+        BN_CTX_free(bnctx);
+    }
+
+    if (errorMsg != NULL) {
+        Scm_Error(errorMsg);
+    }
+
+    SCM_ASSERT(result != NULL);
+
+    return result;
+}
+
 /* -> VERIFIED?:<boolean> */
 ScmObj doVerify(ScmString *curveType, const ScmUVector *DGST,
                 const ScmUVector *R, const ScmUVector *S,
@@ -345,93 +431,6 @@ ScmObj doVerify(ScmString *curveType, const ScmUVector *DGST,
 
     return result;
 }
-
-/* curveType: NIST / SN */
-/* -> (R:<u8vector> . S:<u8vector>) */
-ScmObj doSign(ScmString *curveType, const ScmUVector *DGST, const ScmUVector *PRV)
-{
-    char * errorMsg = NULL;
-    ScmObj result = NULL;
-    BIGNUM * prv = NULL;
-    ECDSA_SIG * signature = NULL;
-    EVP_MD_CTX * mdctx = NULL;
-    unsigned char * sig = NULL;
-    BN_CTX * bnctx = BN_CTX_new();
-
-    const char * curve = Scm_GetStringConst(curveType);
-    EVP_PKEY_CTX * privCtx = NULL;
-
-    BN_CTX_start(bnctx);
-
-    if ((prv = ScmUVectorToBignum(PRV, bnctx)) == NULL) {
-        errorMsg = "Failed construct bignum PRV";
-        goto exit;
-    }
-
-    if ((privCtx = loadPrivateKey(prv, curve)) == NULL) {
-        errorMsg = "Key construction failed.";
-        goto exit;
-    }
-
-    const unsigned char * dgst = (unsigned char *)SCM_UVECTOR_ELEMENTS(DGST);
-    const int dgstlen = SCM_UVECTOR_SIZE(DGST);
-
-    if ((mdctx = EVP_MD_CTX_new()) == NULL) {
-        errorMsg = "Failed start digest context.";
-        goto exit;
-    }
-
-    sig = SCM_MALLOC(signatureSize(dgstlen));
-    size_t siglen;
-
-    EVP_MD_CTX_set_pkey_ctx(mdctx, privCtx);
-    EVP_PKEY * pkey = EVP_PKEY_CTX_get0_pkey(privCtx);
-
-    if (! EVP_DigestSignInit(mdctx, NULL, NULL, NULL, pkey)) {
-        errorMsg = "Failed digest sign init";
-        goto exit;
-    }
-
-    if (! EVP_DigestSign(mdctx, sig, &siglen, dgst, dgstlen)) {
-        errorMsg = "Failed to sign by private key";
-        goto exit;
-    }
-
-    if ((signature = ECDSA_SIG_new()) == NULL) {
-        errorMsg = "Failed construct ECDSA signature";
-        goto exit;
-    }
-
-    if (d2i_ECDSA_SIG(&signature, (const unsigned char**)&sig, siglen) == NULL) {
-        errorMsg = "Failed convert signature";
-        goto exit;
-    }
-
-    result = signatureToPairs(signature);
-
-    if (result == NULL) {
-        errorMsg = "Failed construct signature";
-        goto exit;
-    }
-
- exit:
-    if (mdctx != NULL) EVP_MD_CTX_free(mdctx);
-    if (signature != NULL) ECDSA_SIG_free(signature);
-
-    if (bnctx != NULL) {
-        BN_CTX_end(bnctx);
-        BN_CTX_free(bnctx);
-    }
-
-    if (errorMsg != NULL) {
-        Scm_Error(errorMsg);
-    }
-
-    SCM_ASSERT(result != NULL);
-
-    return result;
-}
-
 
 /*
  * Module initialization function.
