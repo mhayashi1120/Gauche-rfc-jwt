@@ -146,11 +146,10 @@
          [S (bignum->string C)])
     S))
 
-;; ##
+;; ## -> <message-digest-algorithm>
 (define (rsa-hasher algorithm)
   (match algorithm
     ["RS256" <sha256>]
     ["RS384" <sha384>]
     ["RS512" <sha512>]
-    [else #f]))
-
+    [_ #f]))

@@ -117,12 +117,12 @@
        (cons "kty" "RSA")
        (cons "n" N)
        (cons "e" E)))]
-    [else
+    [_
      #f]))
 
 (define (try-ec pem-file)
   (match (parse-ec-pem (try-call-openssl pem-file `(ec -noout -text)))
-    [(D (X Y) crv) 
+    [(D (X Y) crv)
      (construct-json
       (list
        (cons "kty" "EC")
@@ -131,7 +131,7 @@
        (cons "y" Y)
        (cons "crv" crv)
        ))]
-    [else
+    [_
      #f]))
 
 (define (run-import pem-file)
@@ -151,8 +151,8 @@
   (match (cdr args)
     [(pem-file)
      (run-import pem-file)]
-    [else
+    [_
      (usage)
      (exit 1)])
-  
+
   0)
