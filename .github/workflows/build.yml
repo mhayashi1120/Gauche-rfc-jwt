@@ -25,18 +25,3 @@ jobs:
           apt-get install -y libssl-dev;
       - name: CI
         run: ./run-ci.sh
-  optional-build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-    container:
-      image: practicalscheme/gauche
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup package
-        run: |
-          true
-      - name: CI
-        run: ./run-ci.sh
