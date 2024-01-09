@@ -9,6 +9,7 @@
    read-ecdsa-private read-ecdsa-public
 
    ecdsa-sign ecdsa-verify?)
+  ;; To keep backward compat
   (export
    (rename <ecdsa-public> <ecdsa-public-key>)
    (rename <ecdsa-private> <ecdsa-private-key>)))
