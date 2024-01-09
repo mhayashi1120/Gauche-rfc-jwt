@@ -2,6 +2,7 @@
 ;; Configuring Gauche-rfc-jwt
 ;; Run ./configure (or gosh ./configure) to generate Makefiles.
 
+(use srfi-13)
 (use gauche.configure)
 
 (load "configure-compat"
@@ -47,14 +48,19 @@
 
 ;; Here you can add feature tests and other cf-define's.
 
-(define (ensure-subst symbol)
+;; -> <void>
+(define (ensure-subst! symbol)
   (unless (cf-have-subst? symbol)
     (cf-subst symbol "")))
 
+;; -> <string>
+(define (file$ path)
+  (string-trim-both (file->string path)))
+
 ;; These subsutitutions come from environment. Maybe empty.
-(ensure-subst 'ARCH_LIBSSL_DEPENDS)
-(ensure-subst 'SCM_LIBSSL_DEPENDS)
-(ensure-subst 'TEST_LIBSSL_DEPENDS)
+(ensure-subst! 'ARCH_LIBSSL_DEPENDS)
+(ensure-subst! 'SCM_LIBSSL_DEPENDS)
+(ensure-subst! 'TEST_LIBSSL_DEPENDS)
 
 (let ([ecdsa (cf-feature-ref 'ecdsa)]
       [failed! (^a (errmsg "Not found ~a\n" a)
@@ -72,7 +78,7 @@
 
   (cond
    [(equal? ecdsa "no")
-    (cf-subst 'ECDSA_SCM_BODY (file->string "./rfc/jwt/ecdsa-void.scm"))]
+    (cf-subst 'ECDSA_SCM_BODY (file$ "./rfc/jwt/ecdsa-void.scm"))]
    [ecdsa
 
     ;; Checking early entry point FN of LIB
@@ -86,7 +92,7 @@
     (cf-subst-append 'ARCH_LIBSSL_DEPENDS "$(srcdir)/$(ECLIB_BIN_NAME)")
     (cf-subst-append 'SCM_LIBSSL_DEPENDS "$(srcdir)/rfc/jwt/ecdsa.scm")
     (cf-subst-append 'TEST_LIBSSL_DEPENDS "$(srcdir)/__tests__/ecdsa-0001.scm")
-    (cf-subst 'ECDSA_SCM_BODY (file->string "./rfc/jwt/ecdsa-body.scm"))]))
+    (cf-subst 'ECDSA_SCM_BODY (file$ "./rfc/jwt/ecdsa-body.scm"))]))
 
 (and-let* ([werror (cf-feature-ref 'werror)]
            [(equal? werror "yes")])

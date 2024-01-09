@@ -1,1 +1,5 @@
+;;;
+;;; ECDSA module for JWT
+;;;
+
 @ECDSA_SCM_BODY@
