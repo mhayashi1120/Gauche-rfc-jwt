@@ -47,7 +47,9 @@
 
 ;; Seems working...
 (define (parse-ec-pem s)
-  (guard (e [else #f])
+  (guard (e [else
+             (report-error e)
+             #f])
     (list
      (if-let1 m (#/priv: / s)
        (if-let1 m (#/^([\sa-f0-9:]+)/ (string-trim-both (m 'after)))
@@ -77,7 +79,9 @@
 
 
 (define (parse-rsa-pem s)
-  (guard (e [else #?= e #f])
+  (guard (e [else
+             (report-error e)
+             #f])
     (list
      (if-let1 m (#/RSA Public-Key: *?\(([0-9]+) bit\)/ s)
        (string->number (m 1))
