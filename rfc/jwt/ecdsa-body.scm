@@ -1,7 +1,3 @@
-;;;
-;;; ECDSA module for JWT
-;;;
-
 (define-module rfc.jwt.ecdsa
   (use rfc.base64)
   (use rfc.sha1)
@@ -9,11 +5,9 @@
   (use rfc.jwk.ref)
   (use util.match)
   (export
-   ecdsa-sign ecdsa-verify?
-
    read-ecdsa-private read-ecdsa-public
-   )
-  )
+
+   ecdsa-sign ecdsa-verify?))
 (select-module rfc.jwt.ecdsa)
 
 ;; Loads extension (To use Openssl libssl)
@@ -145,20 +139,20 @@
   (check-acceptable algorithm public-key)
   (let* ([digest (digest-string (~ public-key'hasher) signing-input)]
          [digest/bin (string->u8vector digest)]
-         [x/bin (bignum->u8vector (~ public-key'X))]
-         [y/bin (bignum->u8vector (~ public-key'Y))])
-    (receive (r s) (R&S signature)
+         [X (bignum->u8vector (~ public-key'X))]
+         [Y (bignum->u8vector (~ public-key'Y))])
+    (receive (R S) (R&S signature)
       (do-verify (~ public-key 'CRV)
-                 digest/bin r s
-                 x/bin y/bin))))
+                 digest/bin R S
+                 X Y))))
 
 ;; ## -> <string>
 (define (ecdsa-sign algorithm signing-input private-key)
   (check-acceptable algorithm private-key)
   (let* ([digest (digest-string (~ private-key'hasher) signing-input)]
          [digest/bin (string->u8vector digest)]
-         [d/bin (bignum->u8vector (~ private-key'D))])
-    (receive (r s) (do-sign (~ private-key'CRV) digest/bin d/bin)
+         [D (bignum->u8vector (~ private-key'D))])
+    (receive (r s) (do-sign (~ private-key'CRV) digest/bin D)
       (let ([R (%maybe-fill (~ private-key'sign-size) r)]
             [S (%maybe-fill (~ private-key'sign-size) s)])
       (u8vector->string (u8vector-concatenate (list R S)))))))
