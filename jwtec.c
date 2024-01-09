@@ -153,15 +153,11 @@ static Binary * publicKeyOctetString(const char * curve, const BIGNUM * X, const
         return NULL;
     }
 
-    group = EC_GROUP_new_by_curve_name(nid);
-
-    if (group == NULL) {
+    if ((group = EC_GROUP_new_by_curve_name(nid)) == NULL) {
         goto fail;
     }
 
-    point = EC_POINT_new(group);
-
-    if (point == NULL) {
+    if ((point = EC_POINT_new(group)) == NULL) {
         goto fail;
     }
 
@@ -214,9 +210,7 @@ static EVP_PKEY_CTX * loadPublicKey(BIGNUM * X, BIGNUM * Y, const char * curve, 
         goto fail;
     }
 
-    octetKey = publicKeyOctetString(curve, X, Y, bnctx);
-
-    if (octetKey == NULL) {
+    if ((octetKey = publicKeyOctetString(curve, X, Y, bnctx)) == NULL) {
         goto fail;
     }
 
@@ -308,9 +302,7 @@ ScmObj doSign(ScmString *curveType, const ScmUVector *DGST, const ScmUVector *PR
         goto exit;
     }
 
-    result = signatureToPairs(signature);
-
-    if (result == NULL) {
+    if ((result = signatureToPairs(signature)) == NULL) {
         errorMsg = "Failed construct signature";
         goto exit;
     }
