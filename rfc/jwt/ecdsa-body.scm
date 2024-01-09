@@ -5,9 +5,13 @@
   (use rfc.jwk.ref)
   (use util.match)
   (export
+   <ecdsa-public> <ecdsa-private>
    read-ecdsa-private read-ecdsa-public
 
-   ecdsa-sign ecdsa-verify?))
+   ecdsa-sign ecdsa-verify?)
+  (export
+   (rename <ecdsa-public> <ecdsa-public-key>)
+   (rename <ecdsa-private> <ecdsa-private-key>)))
 (select-module rfc.jwt.ecdsa)
 
 ;; Loads extension (To use Openssl libssl)
@@ -43,13 +47,13 @@
    (sign-size)
    ))
 
-(define-class <ecdsa-private-key> (<ecdsa-key>)
+(define-class <ecdsa-private> (<ecdsa-key>)
   (
    ;; <integer>
    (D :init-keyword :D)
    ))
 
-(define-class <ecdsa-public-key> (<ecdsa-key>)
+(define-class <ecdsa-public> (<ecdsa-key>)
   (
    ;; <integer>
    (X :init-keyword :X)
@@ -115,17 +119,17 @@
 ;;; # JWK API
 ;;;
 
-;; ## -> <ecdsa-private-key>
+;; ## -> <ecdsa-private>
 (define (read-ecdsa-private jwk-node)
   (check-jwk-node jwk-node)
-  (make <ecdsa-private-key>
+  (make <ecdsa-private>
     :CRV (assoc-ref jwk-node "crv")
     :D (bignum-ref jwk-node "d")))
 
-;; ## -> <ecdsa-public-key>
+;; ## -> <ecdsa-public>
 (define (read-ecdsa-public jwk-node)
   (check-jwk-node jwk-node)
-  (make <ecdsa-public-key>
+  (make <ecdsa-public>
     :CRV (assoc-ref jwk-node "crv")
     :X (bignum-ref jwk-node "x")
     :Y (bignum-ref jwk-node "y")))

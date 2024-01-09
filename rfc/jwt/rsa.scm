@@ -9,6 +9,7 @@
   (use util.match)
   (use rfc.jwk.ref)
   (export
+   <rsa-public> <rsa-private>
    read-rsa-private read-rsa-public
 
    rsa-hasher rsa-verify? rsa-sign)
