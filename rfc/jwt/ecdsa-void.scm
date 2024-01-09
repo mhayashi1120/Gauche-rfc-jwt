@@ -1,12 +1,6 @@
-;;;
-;;; ECDSA module for JWT
-;;;
-
 (define-module rfc.jwt.ecdsa
   (export
-   ecdsa-sign ecdsa-verify?
-   )
-  )
+   ecdsa-sign ecdsa-verify?))
 (select-module rfc.jwt.ecdsa)
 
 (define (ecdsa-sign algorithm . _)
