@@ -282,7 +282,7 @@ ScmObj doSign(ScmString *curveType, const ScmUVector *DGST, const ScmUVector *PR
     EVP_MD_CTX_set_pkey_ctx(mdctx, privCtx);
     EVP_PKEY * pkey = EVP_PKEY_CTX_get0_pkey(privCtx);
 
-    if (! EVP_DigestSignInit(mdctx, NULL, NULL, NULL, pkey)) {
+    if (! EVP_DigestSignInit(mdctx, &privCtx, NULL, NULL, pkey)) {
         errorMsg = "Failed digest sign init";
         goto exit;
     }
@@ -374,12 +374,6 @@ ScmObj doVerify(ScmString *curveType, const ScmUVector *DGST,
 
     const unsigned char * dgst = (unsigned char*)SCM_UVECTOR_ELEMENTS(DGST);
     const int dgstlen = SCM_UVECTOR_SIZE(DGST);
-
-    if ((mdctx = EVP_MD_CTX_new()) == NULL) {
-        errorMsg = "Failed start digest context.";
-        goto exit;
-    }
-
     const unsigned char * sigtop = SCM_MALLOC(signatureSize(dgstlen));
     unsigned char * sig = (unsigned char *)sigtop;
     int siglen = i2d_ECDSA_SIG(signature, &sig);
@@ -389,7 +383,16 @@ ScmObj doVerify(ScmString *curveType, const ScmUVector *DGST,
         goto exit;
     }
 
+    /* `sig` point to next of the buffer */
+    SCM_ASSERT(sigtop + siglen == sig);
+
+    if ((mdctx = EVP_MD_CTX_new()) == NULL) {
+        errorMsg = "Failed start digest context.";
+        goto exit;
+    }
+
     EVP_MD_CTX_set_pkey_ctx(mdctx, pubCtx);
+
     EVP_PKEY * pkey = EVP_PKEY_CTX_get0_pkey(pubCtx);
 
     if (! EVP_DigestVerifyInit(mdctx, &pubCtx, NULL, NULL, pkey)) {
@@ -397,13 +400,17 @@ ScmObj doVerify(ScmString *curveType, const ScmUVector *DGST,
         goto exit;
     }
 
-    /* `sig` point to next of the buffer */
-    SCM_ASSERT(sigtop + siglen == sig);
-
-    if (EVP_DigestVerify(mdctx, sigtop, siglen, dgst, dgstlen) == 1) {
+    switch (EVP_DigestVerify(mdctx, sigtop, siglen, dgst, dgstlen))
+    {
+    case 1:
         result = SCM_TRUE;
-    } else {
+        break;
+    case 0:
         result = SCM_FALSE;
+        break;
+    default:
+        errorMsg = "Failed digest verify";
+        goto exit;
     }
 
  exit:
