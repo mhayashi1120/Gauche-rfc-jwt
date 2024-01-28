@@ -13,4 +13,3 @@
  '(("typ" . "JWT") ("alg" . "HS256"))
  '(("iss" . "https://example.com/") ("iat" . 1587701596))
  :iss "https://example.com/")
-

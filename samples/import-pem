@@ -12,7 +12,7 @@
 (define (usage)
   (format #t "usage: ~a PEM-FILE\n" (script-file))
   (format #t "\n")
-  (format #t "\tPEM-FILE accept \"-\" as standard input.\n")
+  (format #t "\t PEM-FILE accept \"-\" as standard input.\n")
   )
 
 (debug-print-width #f)
