@@ -280,6 +280,7 @@ ScmObj doSign(ScmString *curveType, const ScmUVector *DGST, const ScmUVector *PR
     size_t siglen;
 
     EVP_MD_CTX_set_pkey_ctx(mdctx, privCtx);
+
     EVP_PKEY * pkey = EVP_PKEY_CTX_get0_pkey(privCtx);
 
     if (! EVP_DigestSignInit(mdctx, &privCtx, NULL, NULL, pkey)) {
